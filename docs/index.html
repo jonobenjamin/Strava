@@ -3,11 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>My Strava Activities</title>
+  <title>My Strava Activities - Northern Botswana</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     html, body, #map { height: 100%; margin: 0; }
-    .controls { position: absolute; top: 10px; left: 10px; background: white; padding: 8px 10px; z-index: 1000; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+    .controls {
+      position: absolute; top: 10px; left: 10px;
+      background: white; padding: 8px 10px;
+      z-index: 1000; border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.15);
+    }
     .controls select { margin-right: 6px; }
   </style>
 </head>
@@ -21,14 +26,15 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const map = L.map('map');
-    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+    // Initialize the map centered on Northern Botswana
+    const map = L.map('map').setView([20.0, 24.0], 7);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
     const layerGroup = L.layerGroup().addTo(map);
     let features = [];
 
     // Load the GeoJSON produced by the workflow
-    fetch('../data/activities.geojson?_=' + Date.now())
+    fetch('data/activities.geojson?_=' + Date.now())
       .then(r => r.json())
       .then(geo => {
         features = geo.features || [];
@@ -43,8 +49,45 @@
     function draw(list) {
       layerGroup.clearLayers();
       const gj = L.geoJSON({ type: 'FeatureCollection', features: list }, {
-        style: function() { return { weight: 3 }; },
+        style: function() { return { weight: 3, color: 'blue' }; },
         onEachFeature: (feat, layer) => {
           const p = feat.properties || {};
           const title = [p.name, p.date].filter(Boolean).join(' — ');
           layer.bindPopup(`<b>${title}</b><br>${p.type || p.sport_type || ''}<br>${(p.distance/1000).toFixed(1)} km`);
+        }
+      }).addTo(layerGroup);
+      
+      // Optional: zoom to data bounds if features exist, else keep Northern Botswana view
+      if (list.length) {
+        const bounds = gj.getBounds();
+        if (bounds.isValid()) map.fitBounds(bounds, { maxZoom: 12, padding: [20,20] });
+      }
+    }
+
+    function initFilters(list) {
+      const years = Array.from(new Set(list.map(f => f.properties?.year).filter(Boolean))).sort();
+      const months = [...Array(12).keys()].map(i => i+1);
+      const ySel = document.getElementById('year');
+      const mSel = document.getElementById('month');
+
+      ySel.innerHTML = '<option value="">All</option>' + years.map(y => `<option>${y}</option>`).join('');
+      mSel.innerHTML = '<option value="">All</option>' + months.map(m => `<option>${m}</option>`).join('');
+
+      function apply() {
+        const y = ySel.value; const m = mSel.value;
+        const filtered = features.filter(f => {
+          const p = f.properties || {};
+          if (y && String(p.year) !== y) return false;
+          if (m && String(p.month) !== m) return false;
+          return true;
+        });
+        draw(filtered);
+      }
+
+      ySel.onchange = apply;
+      mSel.onchange = apply;
+      document.getElementById('reset').onclick = () => { ySel.value=''; mSel.value=''; apply(); };
+    }
+  </script>
+</body>
+</html>
