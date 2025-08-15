@@ -13,7 +13,7 @@ CLIENT_ID = os.getenv("STRAVA_CLIENT_ID")
 CLIENT_SECRET = os.getenv("STRAVA_CLIENT_SECRET")
 REFRESH_TOKEN = os.getenv("STRAVA_REFRESH_TOKEN")
 
-DATA_DIR = os.path.join("data")
+DATA_DIR = os.path.join("data", "data")
 GEOJSON_PATH = os.path.join(DATA_DIR, "activities.geojson")
 SHAPE_DIR = os.path.join(DATA_DIR, "shapefile")
 SHAPE_BASENAME = "activities"
