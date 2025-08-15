@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Strava Activities</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body, #map { height: 100%; margin: 0; }
+    .controls { position: absolute; top: 10px; left: 10px; background: white; padding: 8px 10px; z-index: 1000; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+    .controls select { margin-right: 6px; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="controls">
+    <label>Year <select id="year"></select></label>
+    <label>Month <select id="month"></select></label>
+    <button id="reset">Reset</button>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map');
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+    const layerGroup = L.layerGroup().addTo(map);
+    let features = [];
+
+    // Load the GeoJSON produced by the workflow
+    fetch('../data/activities.geojson?_=' + Date.now())
+      .then(r => r.json())
+      .then(geo => {
+        features = geo.features || [];
+        initFilters(features);
+        draw(features);
+      })
+      .catch(err => {
+        console.error(err);
+        alert('No data yet. The GitHub Action will create data/activities.geojson after first run.');
+      });
+
+    function draw(list) {
+      layerGroup.clearLayers();
+      const gj = L.geoJSON({ type: 'FeatureCollection', features: list }, {
+        style: function() { return { weight: 3 }; },
+        onEachFeature: (feat, layer) => {
+          const p = feat.properties || {};
+          const title = [p.name, p.date].filter(Boolean).join(' — ');
+          layer.bindPopup(`<b>${title}</b><br>${p.type || p.sport_type || ''}<br>${(p.distance/1000).toFixed(1)} km`);
