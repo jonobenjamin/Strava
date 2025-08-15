@@ -33,11 +33,60 @@
     const layerGroup = L.layerGroup().addTo(map);
     let features = [];
 
+    // Thresholds for TSS
+    const thresholds = {
+      running_pace: 4.76, // m/s = 3:30 per km
+      cycling_power: 280,  // FTP in watts
+      cycling_hr: {        // HR zones midpoint for approximate IF
+        Z2: 161.5,
+        Z3: 173,
+        Z4: 183.5,
+        Z5a: 192,
+        Z5b: 197.5,
+        Z5c: 228
+      }
+    };
+
+    function hr_to_if(hr) {
+      if(hr >= 155 && hr <= 168) return hr / thresholds.cycling_hr.Z2;
+      if(hr >= 169 && hr <= 177) return hr / thresholds.cycling_hr.Z3;
+      if(hr >= 178 && hr <= 189) return hr / thresholds.cycling_hr.Z4;
+      if(hr >= 190 && hr <= 194) return hr / thresholds.cycling_hr.Z5a;
+      if(hr >= 195 && hr <= 200) return hr / thresholds.cycling_hr.Z5b;
+      if(hr >= 201) return hr / thresholds.cycling_hr.Z5c;
+      return 1; // default
+    }
+
     // Load the GeoJSON produced by the workflow
     fetch('data/activities.geojson?_=' + Date.now())
       .then(r => r.json())
       .then(geo => {
         features = geo.features || [];
+
+        // Calculate TSS for each activity
+        features.forEach(f => {
+          const p = f.properties || {};
+          const sport = (p.type || p.sport_type || '').toLowerCase();
+          const duration_sec = p.moving_time || 0;
+          let tss = 0;
+
+          if (sport === 'run' || sport === 'running') {
+            const avg_speed = p.average_speed || (p.distance / duration_sec);
+            const IF = avg_speed / thresholds.running_pace;
+            tss = (duration_sec / 3600) * IF * IF * 100;
+          } else if (sport === 'ride' || sport === 'cycling' || sport === 'bike') {
+            if (p.average_watts) {
+              const IF = p.average_watts / thresholds.cycling_power;
+              tss = (duration_sec / 3600) * IF * IF * 100;
+            } else if (p.average_heartrate) {
+              const IF = hr_to_if(p.average_heartrate);
+              tss = (duration_sec / 3600) * IF * IF * 100;
+            }
+          }
+
+          p.tss = Math.round(tss);
+        });
+
         initFilters(features);
         draw(features);
       })
@@ -53,11 +102,15 @@
         onEachFeature: (feat, layer) => {
           const p = feat.properties || {};
           const title = [p.name, p.date].filter(Boolean).join(' — ');
-          layer.bindPopup(`<b>${title}</b><br>${p.type || p.sport_type || ''}<br>${(p.distance/1000).toFixed(1)} km`);
+          layer.bindPopup(`
+            <b>${title}</b><br>
+            ${p.type || p.sport_type || ''}<br>
+            ${(p.distance/1000).toFixed(1)} km<br>
+            TSS: ${p.tss}
+          `);
         }
       }).addTo(layerGroup);
       
-      // Optional: zoom to data bounds if features exist, else keep Northern Botswana view
       if (list.length) {
         const bounds = gj.getBounds();
         if (bounds.isValid()) map.fitBounds(bounds, { maxZoom: 12, padding: [20,20] });
@@ -75,7 +128,7 @@
 
       function apply() {
         const y = ySel.value; const m = mSel.value;
-        const filtered = features.filter(f => {
+        const filtered = list.filter(f => {
           const p = f.properties || {};
           if (y && String(p.year) !== y) return false;
           if (m && String(p.month) !== m) return false;
