@@ -37,3 +37,4 @@ function jsonError(res, status, message) {
 }
 
 module.exports = { applyCors, handleOptions, jsonError, ALLOWED_ORIGINS };
+
