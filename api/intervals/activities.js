@@ -180,3 +180,4 @@ module.exports = async function handler(req, res) {
     return bad(res, code >= 400 && code < 600 ? code : 502, e.message || 'Upstream fetch failed');
   }
 };
+
