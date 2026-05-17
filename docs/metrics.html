@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live TSS & CTL Dashboard</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .nav {
+            background: #333;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        .nav a {
+            color: white;
+            margin-right: 20px;
+            text-decoration: none;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        h2 {
+            color: #444;
+            border-bottom: 2px solid #007AFF;
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+        
+        /* Fitness Indicators */
+        .fitness-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 30px 0;
+            align-items: center;
+        }
+        
+        .fitness-box {
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            min-width: 120px;
+            position: relative;
+        }
+        
+        .fitness-box.fitness {
+            background: #e3f2fd;
+            border-color: #2196f3;
+        }
+        
+        .fitness-box.fatigue {
+            background: #fff3e0;
+            border-color: #ff9800;
+        }
+        
+        .fitness-box.form {
+            background: #f3e5f5;
+            border-color: #9c27b0;
+        }
+        
+        .fitness-value {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .fitness-box.fitness .fitness-value {
+            color: #2196f3;
+        }
+        
+        .fitness-box.fatigue .fitness-value {
+            color: #ff9800;
+        }
+        
+        .fitness-box.form .fitness-value {
+            color: #9c27b0;
+        }
+        
+        .fitness-label {
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        /* Fitness Ramp Rates */
+        .ramp-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin: 20px 0;
+        }
+        
+        .ramp-title {
+            text-align: center;
+            font-size: 24px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .ramp-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+        }
+        
+        .ramp-item {
+            text-align: center;
+        }
+        
+        .ramp-period {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .ramp-duration {
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 15px;
+        }
+        
+        .ramp-chart {
+            width: 100%;
+            height: 150px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .ramp-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2196f3;
+        }
+
+        /* Prediction Chart Section */
+        .prediction-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin: 20px 0;
+        }
+        
+        .prediction-chart {
+            width: 100%;
+            height: 400px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .metric-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #007AFF;
+        }
+        .metric-box h3 {
+            margin: 0 0 15px;
+            font-size: 18px;
+            color: #333;
+        }
+        .metric-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #007AFF;
+            margin: 10px 0;
+        }
+        .last-updated {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .activity-log {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        .activity-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        .activity-details {
+            flex-grow: 1;
+        }
+        .activity-date {
+            font-weight: bold;
+            color: #333;
+        }
+        .activity-type {
+            color: #007AFF;
+            font-weight: 500;
+        }
+        .activity-stats {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .tss-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #28a745;
+            min-width: 80px;
+            text-align: center;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .refresh-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            float: right;
+            margin-bottom: 10px;
+        }
+        .refresh-btn:hover {
+            background: #218838;
+        }
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .stat-box {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .sample-data {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 12px;
+            color: #999;
+        }
+        
+        /* Activity Filter Styles */
+        .filter-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .filter-btn {
+            padding: 12px 24px;
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .filter-btn:hover {
+            background: #e9ecef;
+            border-color: #007AFF;
+        }
+        
+        .filter-btn.active {
+            background: #007AFF;
+            color: white;
+            border-color: #007AFF;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+    <nav class="nav">
+        <a href="index.html">Sports Map</a>
+        <a href="scratchmap.html">Scratch Map</a>
+        <a href="all_data.html">All Data</a>
+        <a href="metrics.html">CTL (Strava)</a>
+        <a href="metricsintervals.html">CTL (Intervals.icu)</a>
+    </nav>
+
+    <div class="container">
+        <h1>Live TSS & CTL Dashboard</h1>
+        <button class="refresh-btn" onclick="loadActivitiesData()">🔄 Refresh Data</button>
+        
+        <!-- Fitness Indicators -->
+        <div class="fitness-indicators">
+            <div class="fitness-box fatigue">
+                <div class="fitness-value" id="fatigue-value">--</div>
+                <div class="fitness-label">Fatigue</div>
+            </div>
+            <div class="fitness-box fitness">
+                <div class="fitness-value" id="fitness-value">--</div>
+                <div class="fitness-label">Fitness</div>
+            </div>
+            <div class="fitness-box form">
+                <div class="fitness-value" id="form-value">--</div>
+                <div class="fitness-label">Form</div>
+            </div>
+        </div>
+        
+        <!-- Activity Type Filter -->
+        <div class="container">
+            <h2>Activity Filter</h2>
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-filter="all" onclick="filterActivities('all')">All Activities</button>
+                <button class="filter-btn" data-filter="run" onclick="filterActivities('run')">Running Only</button>
+                <button class="filter-btn" data-filter="ride" onclick="filterActivities('ride')">Cycling Only</button>
+            </div>
+        </div>
+
+        <!-- Race Filter -->
+        <div class="container">
+            <h2>Race Filter</h2>
+            <div style="margin: 20px 0;">
+                <select id="raceDropdown" onchange="filterByRace(this.value)" style="padding: 10px; border-radius: 6px; border: 2px solid #ddd; font-size: 16px; min-width: 300px;">
+                    <option value="">Select a race to view day before data...</option>
+                </select>
+                <p style="font-size: 14px; color: #666; margin-top: 8px;">
+                    <em>Shows activities marked as races in Strava (workout_type = 1 for runs, 11 for cycling)</em>
+                </p>
+            </div>
+            <div id="raceInfo" style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 6px; display: none;"></div>
+        </div>
+        
+        <!-- Fitness Ramp Rates -->
+        <div class="ramp-section">
+            <h2 class="ramp-title">Fitness Ramp Rates</h2>
+            <div class="ramp-grid">
+                <div class="ramp-item">
+                    <div class="ramp-period">7</div>
+                    <div class="ramp-duration">Last 7 days</div>
+                    <div class="ramp-chart">
+                        <canvas id="chart7days" width="100" height="150"></canvas>
+                        <div class="sample-data">Sample Data</div>
+                    </div>
+                    <div class="ramp-value" id="ramp7days">--</div>
+                </div>
+                
+                <div class="ramp-item">
+                    <div class="ramp-period">28</div>
+                    <div class="ramp-duration">Last 28 days</div>
+                    <div class="ramp-chart">
+                        <canvas id="chart28days" width="100" height="150"></canvas>
+                        <div class="sample-data">Sample Data</div>
+                    </div>
+                    <div class="ramp-value" id="ramp28days">--</div>
+                </div>
+                
+                <div class="ramp-item">
+                    <div class="ramp-period">90</div>
+                    <div class="ramp-duration">Last 90 days</div>
+                    <div class="ramp-chart">
+                        <canvas id="chart90days" width="100" height="150"></canvas>
+                        <div class="sample-data">Sample Data</div>
+                    </div>
+                    <div class="ramp-value" id="ramp90days">--</div>
+                </div>
+                
+                <div class="ramp-item">
+                    <div class="ramp-period">365</div>
+                    <div class="ramp-duration">Last 365 days</div>
+                    <div class="ramp-chart">
+                        <canvas id="chart365days" width="100" height="150"></canvas>
+                        <div class="sample-data">Sample Data</div>
+                    </div>
+                    <div class="ramp-value" id="ramp365days">--</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 90-Day Historical + 30-Day Prediction -->
+        <div class="prediction-section">
+            <h2 class="ramp-title">90-Day History + 30-Day TSS Prediction</h2>
+            <div class="prediction-chart">
+                <canvas id="predictionChart" width="100%" height="400"></canvas>
+            </div>
+            <div style="text-align: center; margin-top: 15px;">
+                <span style="font-size: 16px; color: #666;">
+                    Based on 7-day average TSS: <span id="avg7DayTSS" style="color: #2196f3; font-weight: bold;">--</span>
+                </span>
+            </div>
+        </div>
+
+        <!-- Year-over-Year Comparison -->
+        <div class="prediction-section">
+            <h2 class="ramp-title">Year-over-Year Comparison</h2>
+            
+            <!-- Control buttons -->
+            <div style="display: flex; justify-content: center; gap: 30px; margin-bottom: 20px; flex-wrap: wrap;">
+                <!-- Activity Type Selection -->
+                <div style="text-align: center;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #666;">Activity Type</label>
+                    <div class="filter-buttons" style="margin: 0;">
+                        <button class="filter-btn active" data-yoy-filter="run" onclick="updateYoYActivityType('run')">Run</button>
+                        <button class="filter-btn" data-yoy-filter="ride" onclick="updateYoYActivityType('ride')">Cycle</button>
+                    </div>
+                </div>
+                
+                <!-- Metric Selection -->
+                <div style="text-align: center;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #666;">Metric</label>
+                    <div class="filter-buttons" style="margin: 0;">
+                        <button class="filter-btn active" data-yoy-metric="distance" onclick="updateYoYMetric('distance')">Distance</button>
+                        <button class="filter-btn" data-yoy-metric="duration" onclick="updateYoYMetric('duration')">Duration</button>
+                    </div>
+                </div>
+                
+                <!-- Year Selection -->
+                <div style="text-align: center;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #666;">Compare To</label>
+                    <select id="yoyYearSelect" onchange="updateYoYYear()" style="padding: 12px 24px; background: #f8f9fa; color: #333; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500;">
+                        <!-- Will be populated dynamically -->
+                    </select>
+                </div>
+            </div>
+            
+            <div class="prediction-chart">
+                <canvas id="yoyChart" width="100%" height="400"></canvas>
+            </div>
+            
+            <div style="text-align: center; margin-top: 15px; color: #666;">
+                <span id="yoyCurrentYearLabel" style="color: #2196f3; font-weight: bold;">2026</span> vs 
+                <span id="yoyCompareYearLabel" style="color: #ff9800; font-weight: bold;">2025</span>
+            </div>
+        </div>
+
+        <!-- CTL Metrics Display -->
+        <div class="metric-box">
+            <h3>CTL / TSS Metrics (42-day rolling average)</h3>
+            <div class="metric-value" id="ctl-all">All: Loading...</div>
+            <div class="metric-value" id="ctl-run">Running: Loading...</div>
+            <div class="metric-value" id="ctl-ride">Cycling: Loading...</div>
+            <div class="last-updated" id="lastUpdated"></div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="summary-stats">
+            <div class="stat-box">
+                <div class="stat-label">Total Activities (42 days)</div>
+                <div class="stat-value" id="totalActivities">--</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Total TSS (42 days)</div>
+                <div class="stat-value" id="totalTSS">--</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Avg TSS/day</div>
+                <div class="stat-value" id="avgTSSPerDay">--</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Last 7 days TSS</div>
+                <div class="stat-value" id="weeklyTSS">--</div>
+            </div>
+        </div>
+        
+        <h2>Recent Activities (Last 42 Days)</h2>
+        <div id="loadingMessage" class="loading">Loading activities...</div>
+        <div id="errorMessage" class="error" style="display: none;"></div>
+        <div class="activity-log" id="activityLog" style="display: none;"></div>
+    </div>
+
+    <script>
+        let allActivities = [];
+        let charts = {};
+        let currentFilter = 'all'; // Track current filter
+        let currentRaceFilter = ''; // Track current race filter
+        
+        // Year-over-Year comparison state
+        let yoyActivityType = 'run'; // 'run' or 'ride'
+        let yoyMetric = 'distance'; // 'distance' or 'duration'
+        let yoyCompareYear = null; // Will be set to previous year by default
+
+        // Helper functions
+        function hr_to_if(hr) {
+            if (!hr) return 0;
+            if (hr >= 155 && hr <= 168) return hr / 161.5;
+            if (hr >= 169 && hr <= 177) return hr / 173;
+            if (hr >= 178 && hr <= 189) return hr / 183.5;
+            if (hr >= 190 && hr <= 194) return hr / 192;
+            if (hr >= 195 && hr <= 200) return hr / 197.5;
+            if (hr >= 201) return hr / 228;
+            return hr / 183.5;
+        }
+
+        function pace_to_if(avg_speed) {
+            return avg_speed ? avg_speed / 4.76 : 0;
+        }
+
+        // Activity Filter Function
+        function filterActivities(filterType) {
+            currentFilter = filterType;
+
+            // Update button states
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-filter="${filterType}"]`).classList.add('active');
+
+            // Re-apply the current filters (race filter takes precedence, then activity type)
+            applyAllFilters();
+        }
+
+        // Apply all active filters in the correct order
+        function applyAllFilters() {
+            let filteredActivities = allActivities;
+
+            // First apply race filter if active
+            if (currentRaceFilter) {
+                const selectedRace = allActivities.find(activity => activity.properties.id == currentRaceFilter);
+                if (selectedRace) {
+                    const raceDate = new Date(selectedRace.properties.date);
+                    const dayBeforeRace = new Date(raceDate);
+                    dayBeforeRace.setDate(dayBeforeRace.getDate() - 1);
+
+                    filteredActivities = allActivities.filter(activity => {
+                        const activityDate = new Date(activity.properties.date);
+                        return activityDate <= dayBeforeRace;
+                    });
+                }
+            }
+
+            // Then apply activity type filter if active
+            if (currentFilter === 'run') {
+                filteredActivities = filteredActivities.filter(f => {
+                    const sport = (f.properties.type || '').toLowerCase();
+                    return sport.includes('run');
+                });
+            } else if (currentFilter === 'ride') {
+                filteredActivities = filteredActivities.filter(f => {
+                    const sport = (f.properties.type || '').toLowerCase();
+                    return sport.includes('ride') || sport.includes('cycle') || sport.includes('bike');
+                });
+            }
+
+            // Update all metrics with the combined filtered data
+            if (currentRaceFilter) {
+                const selectedRace = allActivities.find(activity => activity.properties.id == currentRaceFilter);
+                if (selectedRace) {
+                    const raceDate = new Date(selectedRace.properties.date);
+                    const dayBeforeRace = new Date(raceDate);
+                    dayBeforeRace.setDate(dayBeforeRace.getDate() - 1);
+                    updateAllMetrics(filteredActivities, dayBeforeRace);
+                }
+            } else {
+                updateAllMetrics(filteredActivities);
+            }
+        }
+
+        // Update all metrics with filtered activities
+        function updateAllMetrics(activities, referenceDate = null) {
+            // Use provided reference date or current date
+            const calcDate = referenceDate || new Date();
+
+            // Update fitness indicators
+            const currentCTL = computeCTL(activities, calcDate);
+            const fatigue = calculateFatigue(activities, calcDate);
+            const form = calculateForm(activities, calcDate);
+            
+            document.getElementById('fitness-value').textContent = currentCTL;
+            document.getElementById('fatigue-value').textContent = fatigue;
+            document.getElementById('form-value').textContent = form;
+            
+            // Update ramp rate charts
+            const periods = [7, 28, 90, 365];
+            periods.forEach(days => {
+                const ctlData = computeDailyCTL(activities, days, calcDate);
+                createChart(`chart${days}days`, ctlData, days);
+                
+                // Calculate ramp rate (change from first to last)
+                const firstValue = ctlData[0] || 0;
+                const lastValue = ctlData[ctlData.length - 1] || 0;
+                const rampRate = Math.round(lastValue - firstValue);
+                
+                document.getElementById(`ramp${days}days`).textContent = rampRate >= 0 ? `+${rampRate}` : rampRate;
+            });
+            
+            // Create the prediction chart
+            createPredictionChart(activities, calcDate);
+            
+            // Update CTL metrics
+            document.getElementById('ctl-all').textContent = "All: " + computeCTL(activities, calcDate);
+            document.getElementById('ctl-run').textContent = "Running: " + computeCTL(activities, calcDate, "run");
+            document.getElementById('ctl-ride').textContent = "Cycling: " + computeCTL(activities, calcDate, "ride");
+            
+            // Update summary stats and activity log
+            calculateSummaryStats(activities, calcDate);
+            updateActivityLog(activities, calcDate);
+        }
+
+        // Compute daily CTL values for a given period
+        function computeDailyCTL(activities, days, referenceDate = null) {
+            const calcDate = referenceDate || new Date();
+            const dailyCTL = [];
+
+            for (let i = days - 1; i >= 0; i--) {
+                const targetDate = new Date(calcDate);
+                targetDate.setDate(targetDate.getDate() - i);
+
+                // Calculate 42-day rolling average up to this date
+                let dailyTSS = Array(42).fill(0);
+
+                activities.forEach(f => {
+                    const p = f.properties;
+                    const activityDate = new Date(p.date);
+                    const dayDiff = Math.floor((targetDate - activityDate) / (24 * 3600 * 1000));
+
+                    if (dayDiff >= 0 && dayDiff < 42) {
+                        dailyTSS[41 - dayDiff] += p.tss || 0;
+                    }
+                });
+
+                const ctl = dailyTSS.reduce((a, b) => a + b, 0) / 42;
+                dailyCTL.push(ctl);
+            }
+
+            return dailyCTL;
+        }
+
+        // Compute 42-day rolling CTL
+        function computeCTL(list, referenceDate = null, filterSport = null) {
+            const calcDate = referenceDate || new Date();
+            const ctlDays = 42;
+            let dailyTSS = Array(ctlDays).fill(0);
+
+            list.forEach(f => {
+                const p = f.properties;
+                const sport = (p.type || '').toLowerCase();
+                if (filterSport && sport.indexOf(filterSport) < 0) return;
+
+                const activityDate = new Date(p.date);
+                const dayDiff = Math.floor((calcDate - activityDate) / (24 * 3600 * 1000));
+
+                if (dayDiff >= 0 && dayDiff < ctlDays) {
+                    dailyTSS[ctlDays - 1 - dayDiff] += p.tss || 0;
+                }
+            });
+
+            const sum = dailyTSS.reduce((a, b) => a + b, 0);
+            return Math.round(sum / ctlDays);
+        }
+
+        // Calculate Fatigue (average TSS for the past 7 days)
+        function calculateFatigue(activities, referenceDate = null) {
+            const calcDate = referenceDate || new Date();
+            let totalTSS = 0;
+
+            activities.forEach(f => {
+                const activityDate = new Date(f.properties.date);
+                const dayDiff = Math.floor((calcDate - activityDate) / (24 * 3600 * 1000));
+
+                if (dayDiff >= 0 && dayDiff < 7) {
+                    totalTSS += f.properties.tss || 0;
+                }
+            });
+
+            // Return average TSS per day over 7 days
+            return Math.round(totalTSS / 7);
+        }
+
+        // Calculate Form (TSB) = Yesterday's Fitness - Yesterday's Fatigue
+        function calculateForm(activities, referenceDate = null) {
+            const calcDate = referenceDate || new Date();
+            const yesterday = new Date(calcDate);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            // Calculate yesterday's fitness (42-day CTL up to yesterday)
+            let dailyTSS = Array(42).fill(0);
+            activities.forEach(f => {
+                const activityDate = new Date(f.properties.date);
+                const dayDiff = Math.floor((yesterday - activityDate) / (24 * 3600 * 1000));
+
+                if (dayDiff >= 0 && dayDiff < 42) {
+                    dailyTSS[41 - dayDiff] += f.properties.tss || 0;
+                }
+            });
+            const yesterdayFitness = dailyTSS.reduce((a, b) => a + b, 0) / 42;
+
+            // Calculate yesterday's fatigue (7 days up to yesterday)
+            let yesterdayFatigue = 0;
+            activities.forEach(f => {
+                const activityDate = new Date(f.properties.date);
+                const dayDiff = Math.floor((yesterday - activityDate) / (24 * 3600 * 1000));
+
+                if (dayDiff >= 0 && dayDiff < 7) {
+                    yesterdayFatigue += f.properties.tss || 0;
+                }
+            });
+            yesterdayFatigue = yesterdayFatigue / 7; // ATL uses 7-day decay
+
+            return Math.round(yesterdayFitness - yesterdayFatigue);
+        }
+
+        // Create chart for ramp rates
+        function createChart(canvasId, data, days) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            if (charts[canvasId]) {
+                charts[canvasId].destroy();
+            }
+            
+            const labels = Array(days).fill().map((_, i) => '');
+            
+            charts[canvasId] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        borderColor: '#2196f3',
+                        backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: false
+                        },
+                        y: {
+                            display: false,
+                            beginAtZero: true
+                        }
+                    },
+                    elements: {
+                        point: {
+                            radius: 0
+                        }
+                    }
+                }
+            });
+        }
+
+        // Create the prediction chart with 90 days CTL history + 30 days prediction
+        function createPredictionChart(activities, referenceDate = null) {
+            const canvas = document.getElementById('predictionChart');
+            const ctx = canvas.getContext('2d');
+
+            if (charts['predictionChart']) {
+                charts['predictionChart'].destroy();
+            }
+
+            const calcDate = referenceDate || new Date();
+            const today = new Date(calcDate);
+            
+            // Get last 7 days average TSS
+            let last7DaysTSS = 0;
+            activities.forEach(f => {
+                const activityDate = new Date(f.properties.date);
+                const dayDiff = Math.floor((today - activityDate) / (24 * 3600 * 1000));
+                
+                if (dayDiff >= 0 && dayDiff < 7) {
+                    last7DaysTSS += f.properties.tss || 0;
+                }
+            });
+            const avg7DayTSS = Math.round(last7DaysTSS / 7);
+            document.getElementById('avg7DayTSS').textContent = avg7DayTSS;
+
+            // Calculate CTL (42-day rolling average) for last 90 days
+            const historicalCTL = [];
+            const labels = [];
+            
+            // Historical CTL data (90 days)
+            for (let i = 89; i >= 0; i--) {
+                const targetDate = new Date(today);
+                targetDate.setDate(targetDate.getDate() - i);
+                
+                // Calculate 42-day rolling average up to this date
+                let dailyTSS = Array(42).fill(0);
+                
+                activities.forEach(f => {
+                    const activityDate = new Date(f.properties.date);
+                    const dayDiff = Math.floor((targetDate - activityDate) / (24 * 3600 * 1000));
+                    
+                    if (dayDiff >= 0 && dayDiff < 42) {
+                        dailyTSS[41 - dayDiff] += f.properties.tss || 0;
+                    }
+                });
+                
+                const ctl = dailyTSS.reduce((a, b) => a + b, 0) / 42;
+                historicalCTL.push(ctl);
+                labels.push(targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+            }
+            
+            // Prediction CTL data (30 days) 
+            const predictionCTL = [];
+            const predictionLabels = [];
+            
+            // Start with current 42-day total TSS
+            let current42DaySum = 0;
+            activities.forEach(f => {
+                const activityDate = new Date(f.properties.date);
+                const dayDiff = Math.floor((today - activityDate) / (24 * 3600 * 1000));
+                
+                if (dayDiff >= 0 && dayDiff < 42) {
+                    current42DaySum += f.properties.tss || 0;
+                }
+            });
+            
+            for (let i = 1; i <= 30; i++) {
+                const futureDate = new Date(today);
+                futureDate.setDate(futureDate.getDate() + i);
+                
+                // Add predicted TSS for this day
+                current42DaySum += avg7DayTSS;
+                
+                // Remove TSS from 42 days ago
+                const dayToRemove = new Date(futureDate);
+                dayToRemove.setDate(dayToRemove.getDate() - 42);
+                
+                let tssToRemove = 0;
+                activities.forEach(f => {
+                    const activityDate = new Date(f.properties.date);
+                    if (activityDate.toDateString() === dayToRemove.toDateString()) {
+                        tssToRemove += f.properties.tss || 0;
+                    }
+                });
+                current42DaySum -= tssToRemove;
+                
+                // Calculate new CTL (42-day average)
+                const predictedCTL = current42DaySum / 42;
+                predictionCTL.push(predictedCTL);
+                predictionLabels.push(futureDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+            }
+            
+            // Combine labels
+            const allLabels = [...labels, ...predictionLabels];
+            
+            charts['predictionChart'] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: allLabels,
+                    datasets: [
+                        {
+                            label: 'Historical CTL (42-day avg)',
+                            data: [...historicalCTL, ...Array(30).fill(null)],
+                            borderColor: '#2196f3',
+                            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                            fill: false,
+                            tension: 0.1,
+                            pointRadius: 1,
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Predicted CTL',
+                            data: [...Array(90).fill(null), ...predictionCTL],
+                            borderColor: '#ff9800',
+                            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                            borderDash: [5, 5],
+                            fill: false,
+                            tension: 0.1,
+                            pointRadius: 2,
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            },
+                            ticks: {
+                                maxTicksLimit: 10
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'CTL (42-day Average TSS)'
+                            },
+                            beginAtZero: true
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        function calculateSummaryStats(activities, referenceDate = null) {
+            const calcDate = referenceDate || new Date();
+            const last42Days = activities.filter(f => {
+                const activityDate = new Date(f.properties.date);
+                const dayDiff = Math.floor((calcDate - activityDate) / (24 * 3600 * 1000));
+                return dayDiff >= 0 && dayDiff < 42;
+            });
+
+            const last7Days = activities.filter(f => {
+                const activityDate = new Date(f.properties.date);
+                const dayDiff = Math.floor((calcDate - activityDate) / (24 * 3600 * 1000));
+                return dayDiff >= 0 && dayDiff < 7;
+            });
+
+            const totalActivities = last42Days.length;
+            const totalTSS = last42Days.reduce((sum, f) => sum + (f.properties.tss || 0), 0);
+            const avgTSSPerDay = Math.round(totalTSS / 42);
+            const weeklyTSS = last7Days.reduce((sum, f) => sum + (f.properties.tss || 0), 0);
+
+            document.getElementById('totalActivities').textContent = totalActivities;
+            document.getElementById('totalTSS').textContent = totalTSS;
+            document.getElementById('avgTSSPerDay').textContent = avgTSSPerDay;
+            document.getElementById('weeklyTSS').textContent = weeklyTSS;
+        }
+
+        function formatDuration(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+        }
+
+        function formatDistance(meters) {
+            if (!meters) return '';
+            const km = (meters / 1000).toFixed(1);
+            return `${km}km`;
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric',
+                weekday: 'short'
+            });
+        }
+
+        // Race filtering functions
+        function populateRaceDropdown(activities) {
+            const dropdown = document.getElementById('raceDropdown');
+            const races = [];
+
+            // Find activities that are races (is_race field or workout_type values)
+            activities.forEach(activity => {
+                const p = activity.properties;
+                const sportType = (p.sport_type || '').toLowerCase();
+                
+                const isRace = (p.is_race === true) ||
+                              (p.workout_type === 1 && sportType.includes('run')) ||
+                              (p.workout_type === 11 && (sportType.includes('ride') || sportType.includes('cycling') || sportType.includes('bike')));
+
+                if (isRace) {
+                    races.push({
+                        id: p.id,
+                        name: p.name,
+                        date: p.date,
+                        type: p.type,
+                        distance: p.distance
+                    });
+                }
+            });
+
+            // Sort races by date (most recent first)
+            races.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            // Clear existing options except the first one
+            dropdown.innerHTML = '<option value="">Select a race to view day before data...</option>';
+
+            // Add race options
+            races.forEach(race => {
+                const option = document.createElement('option');
+                option.value = race.id;
+                const raceDate = new Date(race.date);
+                const formattedDate = raceDate.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    weekday: 'short'
+                });
+                const distance = race.distance ? `${(race.distance / 1000).toFixed(1)}km ` : '';
+                option.textContent = `${formattedDate} - ${distance}${race.name}`;
+                dropdown.appendChild(option);
+            });
+        }
+
+        function filterByRace(raceId) {
+            currentRaceFilter = raceId;
+
+            if (!raceId) {
+                // Clear race filter
+                document.getElementById('raceInfo').style.display = 'none';
+                applyAllFilters(); // Reapply current activity filter
+                return;
+            }
+
+            // Find the selected race
+            const selectedRace = allActivities.find(activity => activity.properties.id == raceId);
+            if (!selectedRace) return;
+
+            const raceDate = new Date(selectedRace.properties.date);
+            const dayBeforeRace = new Date(raceDate);
+            dayBeforeRace.setDate(dayBeforeRace.getDate() - 1);
+
+            console.log(`Race: ${selectedRace.properties.name} on ${raceDate.toDateString()}`);
+            console.log(`Filtering activities up to: ${dayBeforeRace.toDateString()}`);
+
+            // Show race information
+            const raceInfo = document.getElementById('raceInfo');
+            const formattedRaceDate = raceDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                weekday: 'long'
+            });
+            const formattedDayBefore = dayBeforeRace.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                weekday: 'long'
+            });
+
+            raceInfo.innerHTML = `
+                <strong>Race:</strong> ${selectedRace.properties.name}<br>
+                <strong>Race Date:</strong> ${formattedRaceDate}<br>
+                <strong>Showing data up to:</strong> ${formattedDayBefore}<br>
+                <em>All metrics now show fitness state before the race</em>
+            `;
+            raceInfo.style.display = 'block';
+
+            // Apply all filters (race + activity type)
+            applyAllFilters();
+        }
+
+        function updateActivityLog(activities, referenceDate = null) {
+            const logContainer = document.getElementById('activityLog');
+            const calcDate = referenceDate || new Date();
+
+            const recentActivities = activities
+                .filter(f => {
+                    const activityDate = new Date(f.properties.date);
+                    const dayDiff = Math.floor((calcDate - activityDate) / (24 * 3600 * 1000));
+                    return dayDiff >= 0 && dayDiff < 42;
+                })
+                .sort((a, b) => new Date(b.properties.date) - new Date(a.properties.date));
+
+            if (recentActivities.length === 0) {
+                logContainer.innerHTML = '<div class="activity-item">No activities found in the last 42 days.</div>';
+                return;
+            }
+
+            logContainer.innerHTML = recentActivities.map(f => {
+                const p = f.properties;
+                const sport = (p.type || 'Unknown').charAt(0).toUpperCase() + (p.type || 'unknown').slice(1);
+                const duration = formatDuration(p.moving_time || 0);
+                const distance = formatDistance(p.distance);
+                const avgSpeed = p.average_speed ? `${(p.average_speed * 3.6).toFixed(1)} km/h` : '';
+                const avgHR = p.average_heartrate ? `${Math.round(p.average_heartrate)} bpm` : '';
+                const avgPower = p.average_watts ? `${Math.round(p.average_watts)}W` : '';
+
+                let statsText = duration;
+                if (distance) statsText += ` • ${distance}`;
+                if (avgSpeed) statsText += ` • ${avgSpeed}`;
+                if (avgHR) statsText += ` • ${avgHR}`;
+                if (avgPower) statsText += ` • ${avgPower}`;
+
+                return `
+                    <div class="activity-item">
+                        <div class="activity-details">
+                            <div class="activity-date">${formatDate(p.date)}</div>
+                            <div class="activity-type">${sport}</div>
+                            <div class="activity-stats">${statsText}</div>
+                        </div>
+                        <div class="tss-value">${p.tss || 0}</div>
+                    </div>
+                `;
+            }).join('');
+
+            logContainer.style.display = 'block';
+        }
+
+        // Year-over-Year Comparison Functions
+        function updateYoYActivityType(type) {
+            yoyActivityType = type;
+            
+            // Update button states
+            document.querySelectorAll('[data-yoy-filter]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-yoy-filter="${type}"]`).classList.add('active');
+            
+            createYoYChart();
+        }
+        
+        function updateYoYMetric(metric) {
+            yoyMetric = metric;
+            
+            // Update button states
+            document.querySelectorAll('[data-yoy-metric]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-yoy-metric="${metric}"]`).classList.add('active');
+            
+            createYoYChart();
+        }
+        
+        function updateYoYYear() {
+            const select = document.getElementById('yoyYearSelect');
+            yoyCompareYear = parseInt(select.value);
+            document.getElementById('yoyCompareYearLabel').textContent = yoyCompareYear;
+            createYoYChart();
+        }
+        
+        function populateYoYYearDropdown(activities) {
+            const currentYear = new Date().getFullYear();
+            const years = new Set();
+            
+            activities.forEach(activity => {
+                const year = activity.properties.year;
+                if (year && year !== currentYear) {
+                    years.add(year);
+                }
+            });
+            
+            const sortedYears = Array.from(years).sort((a, b) => b - a);
+            const select = document.getElementById('yoyYearSelect');
+            select.innerHTML = '';
+            
+            sortedYears.forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                select.appendChild(option);
+            });
+            
+            // Set default to previous year
+            if (sortedYears.length > 0) {
+                yoyCompareYear = sortedYears[0];
+                select.value = yoyCompareYear;
+                document.getElementById('yoyCompareYearLabel').textContent = yoyCompareYear;
+            }
+            
+            // Update current year label
+            document.getElementById('yoyCurrentYearLabel').textContent = currentYear;
+        }
+        
+        function createYoYChart() {
+            if (!allActivities.length || !yoyCompareYear) return;
+            
+            const canvas = document.getElementById('yoyChart');
+            const ctx = canvas.getContext('2d');
+            
+            if (charts['yoyChart']) {
+                charts['yoyChart'].destroy();
+            }
+            
+            const currentYear = new Date().getFullYear();
+            
+            // Filter activities by activity type
+            const filteredActivities = allActivities.filter(activity => {
+                const sport = (activity.properties.type || '').toLowerCase();
+                if (yoyActivityType === 'run') {
+                    return sport.includes('run');
+                } else if (yoyActivityType === 'ride') {
+                    return sport.includes('ride') || sport.includes('cycle') || sport.includes('bike');
+                }
+                return false;
+            });
+            
+            // Calculate monthly totals for current year and comparison year
+            const currentYearData = Array(12).fill(0);
+            const compareYearData = Array(12).fill(0);
+            
+            filteredActivities.forEach(activity => {
+                const props = activity.properties;
+                const year = props.year;
+                const month = props.month - 1; // JavaScript months are 0-indexed
+                
+                if (year === currentYear && month >= 0 && month < 12) {
+                    if (yoyMetric === 'distance') {
+                        // Distance in kilometers
+                        currentYearData[month] += (props.distance || 0) / 1000;
+                    } else if (yoyMetric === 'duration') {
+                        // Duration in hours
+                        currentYearData[month] += (props.moving_time || 0) / 3600;
+                    }
+                } else if (year === yoyCompareYear && month >= 0 && month < 12) {
+                    if (yoyMetric === 'distance') {
+                        // Distance in kilometers
+                        compareYearData[month] += (props.distance || 0) / 1000;
+                    } else if (yoyMetric === 'duration') {
+                        // Duration in hours
+                        compareYearData[month] += (props.moving_time || 0) / 3600;
+                    }
+                }
+            });
+            
+            // Round values to 1 decimal place
+            const currentYearRounded = currentYearData.map(v => Math.round(v * 10) / 10);
+            const compareYearRounded = compareYearData.map(v => Math.round(v * 10) / 10);
+            
+            const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            
+            const yAxisLabel = yoyMetric === 'distance' ? 'Distance (km)' : 'Duration (hours)';
+            
+            charts['yoyChart'] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: monthLabels,
+                    datasets: [
+                        {
+                            label: `${currentYear}`,
+                            data: currentYearRounded,
+                            backgroundColor: 'rgba(33, 150, 243, 0.6)',
+                            borderColor: '#2196f3',
+                            borderWidth: 2
+                        },
+                        {
+                            label: `${yoyCompareYear}`,
+                            data: compareYearRounded,
+                            backgroundColor: 'rgba(255, 152, 0, 0.6)',
+                            borderColor: '#ff9800',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    const value = context.parsed.y;
+                                    const unit = yoyMetric === 'distance' ? 'km' : 'hours';
+                                    return `${label}: ${value} ${unit}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: yAxisLabel
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function loadActivitiesData() {
+            document.getElementById('loadingMessage').style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('activityLog').style.display = 'none';
+            
+            fetch('data/activities.geojson?_=' + Date.now())
+                .then(r => {
+                    if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+                    return r.json();
+                })
+                .then(geo => {
+                    const features = geo.features || [];
+                    allActivities = features;
+                    
+                    // Calculate TSS per activity using zone-based data when available
+                    features.forEach(f => {
+                        const p = f.properties || {};
+                        const sport = (p.type || '').toLowerCase();
+                        const duration = p.moving_time || 0;
+                        let tss = 0;
+                        
+                        // Use zone-based TSS if available (most accurate)
+                        if (p.zone_based_tss && p.zone_based_tss > 0) {
+                            tss = p.zone_based_tss;
+                        } else {
+                            // Fallback to average-based calculations
+                            if (sport.includes('run')) {
+                                const avg_speed = p.average_speed || (p.distance / duration);
+                                const paceIF = pace_to_if(avg_speed);
+                                let paceTSS = (duration / 3600) * paceIF * paceIF * 100;
+                                
+                                let hrTSS = 0;
+                                if (p.average_heartrate) {
+                                    const hrIF = hr_to_if(p.average_heartrate);
+                                    hrTSS = (duration / 3600) * hrIF * hrIF * 100;
+                                }
+                                
+                                tss = (hrTSS > paceTSS) ? hrTSS : paceTSS;
+                                // Apply 10% increase for running
+                                tss = tss * 1.1;
+                                
+                            } else if (sport.includes('ride') || sport.includes('cycle') || sport.includes('bike')) {
+                                // Cycling TSS calculation - use highest value between power and HR
+                                const FTP = 280; // Your Functional Threshold Power - adjust as needed
+                                
+                                let powerTSS = 0;
+                                let hrTSS = 0;
+                                
+                                // Calculate power-based TSS if watts available
+                                const watts = p.weighted_average_watts || p.average_watts;
+                                if (watts && watts > 0) {
+                                    const IF = watts / FTP;
+                                    powerTSS = (duration / 3600) * IF * IF * 100;
+                                }
+                                
+                                // Calculate HR-based TSS if heart rate available
+                                if (p.average_heartrate) {
+                                    const hrIF = hr_to_if(p.average_heartrate);
+                                    hrTSS = (duration / 3600) * hrIF * hrIF * 100;
+                                }
+                                
+                                // Use the higher TSS value (power or HR)
+                                tss = Math.max(powerTSS, hrTSS);
+                            }
+                        }
+                        
+                        // Store final TSS (zone-based data already includes proper calculations)
+                        p.tss = Math.round(tss);
+                    });
+                    
+                    // Initialize with all activities (default filter)
+                    applyAllFilters();
+                    document.getElementById('lastUpdated').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+
+                    // Populate race dropdown
+                    populateRaceDropdown(features);
+                    
+                    // Populate year-over-year dropdown and create initial chart
+                    populateYoYYearDropdown(features);
+                    createYoYChart();
+
+                    document.getElementById('loadingMessage').style.display = 'none';
+                })
+                .catch(error => {
+                    console.error('Error loading activities:', error);
+                    document.getElementById('loadingMessage').style.display = 'none';
+                    document.getElementById('errorMessage').style.display = 'block';
+                    document.getElementById('errorMessage').textContent = `Error loading activities: ${error.message}`;
+                });
+        }
+
+        setInterval(loadActivitiesData, 5 * 60 * 1000);
+        loadActivitiesData();
+    </script>
+</body>
+</html>

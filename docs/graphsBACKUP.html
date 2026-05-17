@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distance Dashboard</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .nav {
+            background: #333;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        .nav a {
+            color: white;
+            margin-right: 20px;
+            text-decoration: none;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        /* Chart Section */
+        .chart-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin: 20px 0;
+        }
+        
+        .chart-container {
+            width: 100%;
+            height: 500px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        /* Sport Filter Tabs */
+        .sport-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 0;
+            margin: 30px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 4px;
+        }
+        
+        .sport-tab {
+            background: transparent;
+            border: none;
+            padding: 12px 24px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            color: #666;
+            flex: 1;
+            max-width: 120px;
+        }
+        
+        .sport-tab.active {
+            background: #007AFF;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 122, 255, 0.3);
+        }
+        
+        .sport-tab:hover:not(.active) {
+            background: #e9ecef;
+            color: #333;
+        }
+        
+        /* Summary Stats */
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .stat-box {
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-box.weekly {
+            border-color: #007AFF;
+            background: #e3f2fd;
+        }
+        
+        .stat-box.monthly {
+            border-color: #28a745;
+            background: #e8f5e8;
+        }
+        
+        .stat-box.total {
+            border-color: #ff9800;
+            background: #fff3e0;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .stat-box.weekly .stat-value {
+            color: #007AFF;
+        }
+        
+        .stat-box.monthly .stat-value {
+            color: #28a745;
+        }
+        
+        .stat-box.total .stat-value {
+            color: #ff9800;
+        }
+        
+        .refresh-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            float: right;
+            margin-bottom: 10px;
+        }
+        
+        .refresh-btn:hover {
+            background: #218838;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        
+        .sample-data {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+    <nav class="nav">
+        <a href="index.html">Sports Map</a>
+        <a href="scratchmap.html">Scratch Map</a>
+        <a href="all_data.html">All Data</a>
+        <a href="metrics.html">CTL</a>
+        <a href="distance.html">Distance</a>
+    </nav>
+
+    <div class="container">
+        <h1>Distance Dashboard</h1>
+        <button class="refresh-btn" onclick="loadActivitiesData()">🔄 Refresh Data</button>
+        
+        <!-- Chart Section -->
+        <div class="chart-section">
+            <div class="chart-container">
+                <canvas id="distanceChart" width="100%" height="500"></canvas>
+                <div class="sample-data">Sample Data</div>
+            </div>
+        </div>
+        
+        <!-- Sport Filter Tabs -->
+        <div class="sport-tabs">
+            <button class="sport-tab active" data-sport="all" onclick="switchSport('all')">
+                All Sports
+            </button>
+            <button class="sport-tab" data-sport="run" onclick="switchSport('run')">
+                Running
+            </button>
+            <button class="sport-tab" data-sport="ride" onclick="switchSport('ride')">
+                Cycling
+            </button>
+            <button class="sport-tab" data-sport="swim" onclick="switchSport('swim')">
+                Swimming
+            </button>
+        </div>
+        
+        <!-- Summary Stats -->
+        <div class="summary-stats">
+            <div class="stat-box weekly">
+                <div class="stat-label" id="weeklyLabel">This Week</div>
+                <div class="stat-value" id="weeklyDistance">--</div>
+            </div>
+            <div class="stat-box monthly">
+                <div class="stat-label" id="monthlyLabel">This Month</div>
+                <div class="stat-value" id="monthlyDistance">--</div>
+            </div>
+            <div class="stat-box total">
+                <div class="stat-label" id="totalLabel">Last 12 Weeks</div>
+                <div class="stat-value" id="totalDistance">--</div>
+            </div>
+        </div>
+        
+        <div id="loadingMessage" class="loading">Loading activities...</div>
+        <div id="errorMessage" class="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        let allActivities = [];
+        let distanceChart = null;
+        let currentSport = 'all';
+
+        // Helper function to format distance
+        function formatDistance(meters, unit = 'km') {
+            if (!meters || meters === 0) return '0 km';
+            
+            if (unit === 'km') {
+                if (meters < 1000) {
+                    return `${meters.toFixed(0)}m`;
+                }
+                return `${(meters / 1000).toFixed(1)}km`;
+            }
+            return `${meters.toFixed(0)}m`;
+        }
+
+        // Get week start date (Monday)
+        function getWeekStart(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday as start
+            return new Date(d.setDate(diff));
+        }
+
+        // Get month start date
+        function getMonthStart(date) {
+            return new Date(date.getFullYear(), date.getMonth(), 1);
+        }
+
+        // Filter activities by sport
+        function filterActivitiesBySport(activities, sport) {
+            if (sport === 'all') return activities;
+            
+            return activities.filter(f => {
+                const activityType = (f.properties.type || '').toLowerCase();
+                if (sport === 'run') {
+                    return activityType.includes('run');
+                } else if (sport === 'ride') {
+                    return activityType.includes('ride') || activityType.includes('cycle') || activityType.includes('bike');
+                } else if (sport === 'swim') {
+                    return activityType.includes('swim');
+                }
+                return false;
+            });
+        }
+
+        // Calculate weekly distance data
+        function calculateWeeklyData(activities, sport) {
+            const filteredActivities = filterActivitiesBySport(activities, sport);
+            const today = new Date();
+            const weeklyData = [];
+            const labels = [];
+
+            // Get last 12 weeks
+            for (let i = 11; i >= 0; i--) {
+                const weekStart = getWeekStart(new Date(today));
+                weekStart.setDate(weekStart.getDate() - (i * 7));
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekEnd.getDate() + 6);
+
+                let weekDistance = 0;
+                filteredActivities.forEach(f => {
+                    const activityDate = new Date(f.properties.date);
+                    if (activityDate >= weekStart && activityDate <= weekEnd) {
+                        weekDistance += f.properties.distance || 0;
+                    }
+                });
+
+                weeklyData.push(weekDistance / 1000); // Convert to km
+                
+                // Format label
+                const monthName = weekStart.toLocaleDateString('en-US', { month: 'short' });
+                const day = weekStart.getDate();
+                labels.push(`${monthName} ${day}`);
+            }
+
+            return { data: weeklyData, labels };
+        }
+
+        // Calculate monthly distance data
+        function calculateMonthlyData(activities, sport) {
+            const filteredActivities = filterActivitiesBySport(activities, sport);
+            const today = new Date();
+            const monthlyData = [];
+
+            // Get last 12 months worth of weeks (for overlay)
+            for (let i = 11; i >= 0; i--) {
+                const weekStart = getWeekStart(new Date(today));
+                weekStart.setDate(weekStart.getDate() - (i * 7));
+                
+                // Find which month this week belongs to
+                const monthStart = getMonthStart(weekStart);
+                const nextMonth = new Date(monthStart);
+                nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+                let monthDistance = 0;
+                filteredActivities.forEach(f => {
+                    const activityDate = new Date(f.properties.date);
+                    if (activityDate >= monthStart && activityDate < nextMonth) {
+                        monthDistance += f.properties.distance || 0;
+                    }
+                });
+
+                monthlyData.push(monthDistance / 1000); // Convert to km
+            }
+
+            return monthlyData;
+        }
+
+        // Create the distance chart
+        function createDistanceChart(activities, sport) {
+            const canvas = document.getElementById('distanceChart');
+            const ctx = canvas.getContext('2d');
+
+            if (distanceChart) {
+                distanceChart.destroy();
+            }
+
+            const weeklyData = calculateWeeklyData(activities, sport);
+            const monthlyData = calculateMonthlyData(activities, sport);
+
+            distanceChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: weeklyData.labels,
+                    datasets: [
+                        {
+                            label: 'Weekly Distance',
+                            data: weeklyData.data,
+                            backgroundColor: 'rgba(0, 122, 255, 0.8)',
+                            borderColor: '#007AFF',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                            order: 2
+                        },
+                        {
+                            label: 'Monthly Distance',
+                            data: monthlyData,
+                            backgroundColor: 'rgba(40, 167, 69, 0.4)',
+                            borderColor: '#28a745',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                            order: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw.toFixed(1)} km`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Week Starting'
+                            },
+                            ticks: {
+                                maxRotation: 45
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Distance (km)'
+                            },
+                            beginAtZero: true
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        // Calculate summary stats
+        function calculateSummaryStats(activities, sport) {
+            const filteredActivities = filterActivitiesBySport(activities, sport);
+            const today = new Date();
+
+            // This week (Monday to today)
+            const thisWeekStart = getWeekStart(today);
+            let thisWeekDistance = 0;
+            
+            // This month
+            const thisMonthStart = getMonthStart(today);
+            let thisMonthDistance = 0;
+            
+            // Last 12 weeks total
+            const twelveWeeksAgo = new Date(today);
+            twelveWeeksAgo.setDate(twelveWeeksAgo.getDate() - (12 * 7));
+            let totalDistance = 0;
+
+            filteredActivities.forEach(f => {
+                const activityDate = new Date(f.properties.date);
+                const distance = f.properties.distance || 0;
+
+                // This week
+                if (activityDate >= thisWeekStart && activityDate <= today) {
+                    thisWeekDistance += distance;
+                }
+
+                // This month
+                if (activityDate >= thisMonthStart && activityDate <= today) {
+                    thisMonthDistance += distance;
+                }
+
+                // Last 12 weeks
+                if (activityDate >= twelveWeeksAgo && activityDate <= today) {
+                    totalDistance += distance;
+                }
+            });
+
+            // Update display
+            document.getElementById('weeklyDistance').textContent = formatDistance(thisWeekDistance);
+            document.getElementById('monthlyDistance').textContent = formatDistance(thisMonthDistance);
+            document.getElementById('totalDistance').textContent = formatDistance(totalDistance);
+        }
+
+        // Switch sport filter
+        function switchSport(sport) {
+            currentSport = sport;
+            
+            // Update tab appearance
+            document.querySelectorAll('.sport-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-sport="${sport}"]`).classList.add('active');
+
+            // Update chart and stats
+            if (allActivities.length > 0) {
+                createDistanceChart(allActivities, sport);
+                calculateSummaryStats(allActivities, sport);
+            }
+        }
+
+        // Load activities data
+        function loadActivitiesData() {
+            document.getElementById('loadingMessage').style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+            
+            fetch('data/activities.geojson?_=' + Date.now())
+                .then(r => {
+                    if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+                    return r.json();
+                })
+                .then(geo => {
+                    const features = geo.features || [];
+                    allActivities = features;
+                    
+                    // Create initial chart and stats
+                    createDistanceChart(features, currentSport);
+                    calculateSummaryStats(features, currentSport);
+                    
+                    document.getElementById('loadingMessage').style.display = 'none';
+                })
+                .catch(error => {
+                    console.error('Error loading activities:', error);
+                    document.getElementById('loadingMessage').style.display = 'none';
+                    document.getElementById('errorMessage').style.display = 'block';
+                    document.getElementById('errorMessage').textContent = `Error loading activities: ${error.message}`;
+                });
+        }
+
+        // Auto-refresh every 5 minutes
+        setInterval(loadActivitiesData, 5 * 60 * 1000);
+        
+        // Initial load
+        loadActivitiesData();
+    </script>
+</body>
+</html>

@@ -1,0 +1,649 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>All Activities Dashboard</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body { 
+      height: 100%; 
+      margin: 0; 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      overflow: hidden; 
+    }
+    
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    
+    .map-wrap {
+      flex: 1;
+      position: relative;
+      min-height: 300px;
+      width: 100%;
+    }
+
+    #map { 
+      width: 100%;
+      height: 100%;
+      min-height: 300px;
+    }
+
+    .map-controls {
+      background: white;
+      padding: 12px;
+      border-top: 1px solid #e0e0e0;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+      max-height: 40vh;
+      overflow-y: auto;
+    }
+    
+    .controls-header {
+      margin: 0 0 12px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .legend {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: flex-start;
+    }
+
+    .legend--overlay {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+      margin: 0;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.94);
+      border-radius: 6px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+      max-width: 220px;
+      box-sizing: border-box;
+    }
+    
+    .legend-item.legend-toggle {
+      display: flex;
+      align-items: center;
+      font-size: 12px;
+      white-space: nowrap;
+      margin: 0;
+      padding: 4px 6px;
+      border: none;
+      background: transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: inherit;
+      color: #333;
+      text-align: left;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .legend-item.legend-toggle:hover {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .legend-item.legend-toggle:focus-visible {
+      outline: 2px solid #007cba;
+      outline-offset: 1px;
+    }
+    
+    .legend-color { 
+      width: 16px; 
+      height: 16px; 
+      margin-right: 8px; 
+      border: 1px solid rgba(0, 0, 0, 0.2);
+      border-radius: 2px;
+      flex-shrink: 0;
+      box-sizing: border-box;
+    }
+
+    .legend-toggle[aria-pressed="false"] .legend-color {
+      background: transparent !important;
+      border: 1px solid #000;
+    }
+
+    .controls-fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 8px;
+      align-items: end;
+    }
+    
+    .controls-fields label { 
+      font-size: 12px; 
+      font-weight: 500;
+      color: #555;
+    }
+    
+    .controls-fields select { 
+      width: 100%; 
+      margin-top: 4px;
+      padding: 6px 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .stats { 
+      font-size: 13px; 
+      margin: 8px 0;
+      color: #666;
+      font-weight: 500;
+    }
+    
+    .loading {
+      position: absolute; 
+      top: 50%; 
+      left: 50%; 
+      transform: translate(-50%, -50%);
+      background: white; 
+      padding: 20px; 
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15); 
+      z-index: 1001;
+      font-size: 14px;
+    }
+    
+    .error {
+      background: #fee; 
+      border: 1px solid #fcc; 
+      color: #c00;
+      padding: 8px; 
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    
+    button { 
+      padding: 6px 12px;
+      background: #007cba;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background-color 0.2s;
+    }
+    
+    button:hover {
+      background: #005a87;
+    }
+
+    .legend-item.legend-toggle,
+    .legend-item.legend-toggle:hover {
+      background: transparent;
+      color: #333;
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      .legend--overlay {
+        top: 6px;
+        left: 6px;
+        padding: 8px 10px;
+        max-width: 200px;
+      }
+
+      .legend-item.legend-toggle {
+        font-size: 11px;
+        padding: 3px 4px;
+      }
+      
+      .legend-color {
+        width: 14px;
+        height: 14px;
+      }
+      
+      .controls-fields {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+      
+      .map-controls {
+        max-height: 35vh;
+      }
+    }
+
+    /* When embedded as a tile */
+    .tile-mode {
+      height: 100%;
+    }
+    
+    .tile-mode .container {
+      height: 100%;
+    }
+    
+    .tile-mode .map-controls {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: min(220px, 32vw);
+      max-height: calc(100% - 24px);
+      border-radius: 4px;
+      z-index: 1000;
+      padding: 6px;
+      font-size: 10px;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+    
+    .tile-mode .controls-header {
+      font-size: 12px;
+      margin: 0 0 6px 0;
+      line-height: 1.2;
+    }
+    
+    .tile-mode .legend--overlay {
+      top: 4px;
+      left: 4px;
+      padding: 5px 6px;
+      max-width: min(180px, 42vw);
+      gap: 2px;
+    }
+    
+    .tile-mode .legend-item.legend-toggle {
+      font-size: 9px;
+      line-height: 1.1;
+      padding: 2px 3px;
+    }
+    
+    .tile-mode .legend-color {
+      width: 10px;
+      height: 10px;
+      margin-right: 4px;
+    }
+    
+    .tile-mode .controls-fields {
+      grid-template-columns: 1fr;
+      gap: 3px;
+    }
+    
+    .tile-mode .controls-fields label {
+      font-size: 9px;
+      margin-bottom: 1px;
+    }
+    
+    .tile-mode .controls-fields select {
+      padding: 2px 4px;
+      font-size: 9px;
+      margin-top: 1px;
+    }
+    
+    .tile-mode .map-controls button {
+      padding: 3px 6px;
+      font-size: 9px;
+      margin-top: 3px;
+    }
+
+    .tile-mode .legend--overlay .legend-toggle {
+      margin-top: 0;
+    }
+    
+    .tile-mode .stats {
+      font-size: 9px;
+      margin: 4px 0;
+      line-height: 1.1;
+    }
+    
+    @media (max-width: 600px) {
+      .tile-mode .map-controls {
+        position: relative;
+        top: auto;
+        right: auto;
+        width: 100%;
+        border-radius: 0;
+        border-top: 1px solid #e0e0e0;
+        max-height: 25vh;
+        padding: 8px;
+      }
+      
+      .tile-mode .controls-header {
+        font-size: 13px;
+      }
+      
+      .tile-mode .legend-item,
+      .tile-mode .controls-fields label,
+      .tile-mode .stats {
+        font-size: 10px;
+      }
+    }
+  </style>
+</head>
+<body class="dashboard">
+  <div class="container">
+    <div id="loading" class="loading">Loading map data...</div>
+    <div class="map-wrap">
+      <div id="map"></div>
+      <div class="legend legend--overlay" id="legend" role="group" aria-label="Activity layers">
+        <button type="button" class="legend-item legend-toggle" data-category="self drive" aria-pressed="true">
+          <span class="legend-color" style="background:black;"></span>
+          Self Drive
+        </button>
+        <button type="button" class="legend-item legend-toggle" data-category="game drive" aria-pressed="true">
+          <span class="legend-color" style="background:brown;"></span>
+          Game Drive
+        </button>
+        <button type="button" class="legend-item legend-toggle" data-category="flight" aria-pressed="true">
+          <span class="legend-color" style="background:rgba(0,0,255,0.5);"></span>
+          Flight
+        </button>
+        <button type="button" class="legend-item legend-toggle" data-category="boat" aria-pressed="true">
+          <span class="legend-color" style="background:blue;"></span>
+          Boat
+        </button>
+        <button type="button" class="legend-item legend-toggle" data-category="run" aria-pressed="true">
+          <span class="legend-color" style="background:green;"></span>
+          Run
+        </button>
+        <button type="button" class="legend-item legend-toggle" data-category="ride" aria-pressed="true">
+          <span class="legend-color" style="background:red;"></span>
+          Ride/Bike
+        </button>
+        <button type="button" class="legend-item legend-toggle" data-category="other" aria-pressed="true">
+          <span class="legend-color" style="background:gray;"></span>
+          Other
+        </button>
+      </div>
+    </div>
+
+    <div class="map-controls">
+      <h3 class="controls-header">All Activities Dashboard</h3>
+
+      <div class="stats" id="stats">Loading…</div>
+
+      <div class="controls-fields">
+        <label>Year
+          <select id="year"></select>
+        </label>
+        <label>Month
+          <select id="month"></select>
+        </label>
+        <button id="reset">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // Canonical GeoJSON in https://github.com/jonobenjamin/Strava/tree/main/docs/data
+    // Override: window.ALL_DATA_URL_DEFAULTS (before this script) or ?activities=&travel=
+    // Same-origin option when this page is served from that repo’s GitHub Pages:
+    //   activities: new URL('data/activities.geojson', location.href).href
+    var DATA_GITHUB_RAW =
+      'https://raw.githubusercontent.com/jonobenjamin/Strava/main/docs/data';
+    var DATA_URL_DEFAULTS = Object.assign(
+      {
+        activities: DATA_GITHUB_RAW + '/activities.geojson',
+        travel: DATA_GITHUB_RAW + '/travel.geojson'
+      },
+      typeof window !== 'undefined' &&
+        window.ALL_DATA_URL_DEFAULTS &&
+        typeof window.ALL_DATA_URL_DEFAULTS === 'object'
+        ? window.ALL_DATA_URL_DEFAULTS
+        : {}
+    );
+
+    function resolveDataRef(ref) {
+      if (ref == null || String(ref).trim() === '') return '';
+      var s = String(ref).trim();
+      if (/^https?:\/\//i.test(s) || s.indexOf('//') === 0) return s;
+      return new URL(s, window.location.href).href;
+    }
+
+    function getDataEndpoints() {
+      var params = new URLSearchParams(window.location.search);
+      var act = params.get('activities');
+      var trv = params.get('travel');
+      return {
+        activities: resolveDataRef(act != null && act !== '' ? act : DATA_URL_DEFAULTS.activities),
+        travel: resolveDataRef(trv != null && trv !== '' ? trv : DATA_URL_DEFAULTS.travel)
+      };
+    }
+
+    function fetchGeoJson(endpoint) {
+      var url = new URL(endpoint);
+      url.searchParams.set('_', String(Date.now()));
+      return fetch(url.href).then(function (r) {
+        if (!r.ok) throw new Error('GeoJSON request failed');
+        return r.json();
+      }).catch(function () {
+        return { type: 'FeatureCollection', features: [] };
+      });
+    }
+
+    // Detect if running in tile mode (you can set this based on URL params or container size)
+    function detectTileMode() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isTile = urlParams.get('tile') === 'true';
+      const isSmallContainer = window.innerWidth < 800 || window.innerHeight < 600;
+      return isTile || isSmallContainer;
+    }
+
+    // Apply tile mode if detected
+    if (detectTileMode()) {
+      document.body.classList.add('tile-mode');
+      document.body.classList.remove('dashboard');
+    }
+
+    const africaBounds = [[-35.0, -20.0], [38.0, 52.0]];
+    const map = L.map('map', {
+      maxBounds: africaBounds,
+      maxBoundsViscosity: 1.0,
+      dragging: true,
+      scrollWheelZoom: true,
+      doubleClickZoom: true,
+      touchZoom: true
+    }).setView([6.0, 25.0], 4);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    const layerGroup = L.layerGroup().addTo(map);
+    let features = [];
+
+    const CATEGORY_KEYS = ['self drive', 'game drive', 'flight', 'boat', 'run', 'ride', 'other'];
+    const layerVisibility = Object.fromEntries(CATEGORY_KEYS.map(k => [k, true]));
+
+    function getCategory(f) {
+      const t = (f.properties && f.properties.type || '').toLowerCase();
+      if (t === 'self drive') return 'self drive';
+      if (t === 'game drive') return 'game drive';
+      if (t === 'flight') return 'flight';
+      if (t === 'boat') return 'boat';
+      if (t.includes('run')) return 'run';
+      if (t.includes('ride') || t.includes('bike') || t.includes('cycle')) return 'ride';
+      return 'other';
+    }
+
+    function hideLoading() { 
+      document.getElementById('loading').style.display = 'none'; 
+    }
+    
+    function showError(msg) {
+      const el = document.getElementById('stats');
+      el.innerHTML = `<div class="error">${msg}</div>`;
+      hideLoading();
+    }
+
+    function parseTravelActivity(name) {
+      if (!name) return { name, type: 'unknown' };
+      const match = name.match(/\((.*?)\)/);
+      let typeText = match ? match[1].toLowerCase() : '';
+      let activityType = '';
+      
+      if (typeText.includes('brakkies') || typeText.includes('drive')) activityType = 'self drive';
+      else if (typeText.includes('game viewer')) activityType = 'game drive';
+      else if (typeText.includes('flight')) activityType = 'flight';
+      else if (typeText.includes('boat') || typeText.includes('mokoro')) activityType = 'boat';
+      else activityType = 'unknown';
+      
+      const cleanName = name.replace(/\s*\(.*?\)\s*/g, '').trim();
+      return { name: cleanName, type: activityType };
+    }
+
+    // For demo purposes, create sample data if files don't exist
+    function createSampleData() {
+      const activities = {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: { name: "Morning Run", type: "run", year: 2024, month: 8, date: "2024-08-15" },
+            geometry: { type: "LineString", coordinates: [[25.9, -24.6], [26.0, -24.7]] }
+          },
+          {
+            type: "Feature", 
+            properties: { name: "City Bike Tour", type: "ride", year: 2024, month: 8, date: "2024-08-16" },
+            geometry: { type: "LineString", coordinates: [[25.8, -24.5], [25.9, -24.6]] }
+          }
+        ]
+      };
+      
+      const travel = {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: { name: "Safari Drive (game viewer)", year: 2024, month: 7, date: "2024-07-20" },
+            geometry: { type: "LineString", coordinates: [[25.0, -24.0], [25.2, -24.1], [25.3, -24.0]] }
+          },
+          {
+            type: "Feature",
+            properties: { name: "Flight to Maun (flight)", year: 2024, month: 7, date: "2024-07-18" },
+            geometry: { type: "LineString", coordinates: [[25.9, -24.6], [23.4, -20.0]] }
+          }
+        ]
+      };
+      
+      return Promise.resolve([activities, travel]);
+    }
+
+    // Load GeoJSON from DATA_URL_DEFAULTS or ?activities=&travel= (any origin with CORS if cross-site)
+    (function () {
+      var ep = getDataEndpoints();
+      return Promise.all([fetchGeoJson(ep.activities), fetchGeoJson(ep.travel)]);
+    })().then(([activitiesGeo, travelGeo]) => {
+      // If no real data, use sample data
+      if (activitiesGeo.features.length === 0 && travelGeo.features.length === 0) {
+        return createSampleData();
+      }
+      return [activitiesGeo, travelGeo];
+    }).then(([activitiesGeo, travelGeo]) => {
+      features = activitiesGeo.features.concat(
+        travelGeo.features.map(f => {
+          const p = f.properties || {};
+          const parsed = parseTravelActivity(p.name);
+          p.name = parsed.name;
+          p.type = parsed.type;
+          return { ...f, properties: p };
+        })
+      );
+      
+      initFilters(features);
+      draw(features);
+      document.getElementById('stats').textContent = `${features.length} activities loaded`;
+      hideLoading();
+    }).catch(err => {
+      console.error(err);
+      showError('Failed to load activity data.');
+    });
+
+    function draw(list) {
+      layerGroup.clearLayers();
+      
+      if (list.length === 0) {
+        document.getElementById('stats').textContent = 'No activities to show';
+        return;
+      }
+      
+      const gj = L.geoJSON({ type: 'FeatureCollection', features: list }, {
+        style: function(feat) {
+          const t = (feat.properties.type || '').toLowerCase();
+          if (t === 'self drive') return { weight: 3, color: 'black', opacity: 0.8 };
+          if (t === 'game drive') return { weight: 3, color: 'brown', opacity: 0.8 };
+          if (t === 'flight') return { weight: 3, color: 'blue', opacity: 0.5 };
+          if (t === 'boat') return { weight: 3, color: 'blue', opacity: 0.8 };
+          if (t.includes('run')) return { weight: 3, color: 'green', opacity: 0.8 };
+          if (t.includes('ride') || t.includes('bike') || t.includes('cycle')) return { weight: 3, color: 'red', opacity: 0.8 };
+          return { weight: 3, color: 'gray', opacity: 0.8 };
+        },
+        onEachFeature: (feat, layer) => {
+          const p = feat.properties || {};
+          const title = [p.name, p.date].filter(Boolean).join(' — ');
+          layer.bindPopup(`<b>${title}</b><br><em>${p.type}</em>`);
+        }
+      }).addTo(layerGroup);
+
+      if (list.length) {
+        const bounds = gj.getBounds();
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, { maxZoom: 12, padding: [20, 20] });
+        }
+      }
+
+      document.getElementById('stats').textContent = `${list.length} activities shown`;
+    }
+
+    function initLegendToggles(apply) {
+      document.querySelectorAll('.legend-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var cat = btn.getAttribute('data-category');
+          if (!cat || layerVisibility[cat] === undefined) return;
+          layerVisibility[cat] = !layerVisibility[cat];
+          btn.setAttribute('aria-pressed', layerVisibility[cat] ? 'true' : 'false');
+          apply();
+        });
+      });
+    }
+
+    function initFilters(list) {
+      const years = Array.from(new Set(list.map(f => f.properties?.year).filter(Boolean))).sort();
+      const months = [...Array(12).keys()].map(i => i + 1);
+
+      const ySel = document.getElementById('year');
+      const mSel = document.getElementById('month');
+
+      ySel.innerHTML = '<option value="">All</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+      mSel.innerHTML = '<option value="">All</option>' + months.map(m => `<option value="${m}">${new Date(2024, m-1).toLocaleString('default', { month: 'short' })}</option>`).join('');
+
+      function apply() {
+        const y = ySel.value, m = mSel.value;
+        const filtered = list.filter(f => {
+          const p = f.properties || {};
+          if (y && String(p.year) !== y) return false;
+          if (m && String(p.month) !== m) return false;
+          return true;
+        });
+        const visible = filtered.filter(f => layerVisibility[getCategory(f)]);
+        draw(visible);
+      }
+
+      ySel.onchange = apply;
+      mSel.onchange = apply;
+      document.getElementById('reset').onclick = () => { 
+        ySel.value = ''; 
+        mSel.value = ''; 
+        apply(); 
+      };
+      initLegendToggles(apply);
+    }
+
+    // Handle window resize for responsive behavior
+    window.addEventListener('resize', function() {
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 100);
+    });
+  </script>
+</body>
+</html>

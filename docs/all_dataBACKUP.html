@@ -1,0 +1,218 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>All Activities Dashboard</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body { height: 100%; margin: 0; font-family: sans-serif; overflow: hidden; }
+    #map { height: 100%; width: 100%; }
+
+    nav {
+      background:#333;
+      padding:10px;
+      position: absolute;
+      top:0; left:0; right:0;
+      z-index: 1001;
+    }
+    nav a { color:white; margin-right:20px; text-decoration:none; }
+
+    /* Default (fullscreen mode) */
+    .map-controls {
+      position: absolute;
+      top: 60px;
+      right: 10px;
+      z-index: 1000;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      min-width: 220px;
+    }
+
+    .legend { margin-bottom: 8px; }
+    .legend-item { display: flex; align-items: center; margin: 4px 0; }
+    .legend-color { width: 18px; height: 18px; margin-right: 6px; border: 1px solid #000; }
+
+    .controls-fields label { display:block; font-size:12px; margin-top:8px; }
+    .controls-fields select { width: 100%; margin-top:4px; }
+
+    .stats { font-size: 14px; margin-top: 10px; }
+    .loading {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: white; padding: 20px; border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1001;
+    }
+    .error {
+      background: #fee; border: 1px solid #fcc; color: #c00;
+      padding: 4px; border-radius: 4px;
+    }
+    button { width:100%; margin-top:8px; }
+
+    /* ✅ Dashboard overrides */
+    .dashboard .map-controls {
+      position: relative;
+      top: auto;
+      right: auto;
+      width: 100%;
+      min-width: auto;
+      margin-top: 10px;
+      box-sizing: border-box;
+    }
+    .dashboard .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 10px;
+    }
+    .dashboard .legend-item {
+      flex: 1 1 45%;  /* two per row */
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body class="dashboard">
+
+  <div id="loading" class="loading">Loading map data...</div>
+  <div id="map"></div>
+
+  <div class="map-controls">
+    <h3>All Activities Dashboard</h3>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-color" style="background:black;"></div>Self Drive</div>
+      <div class="legend-item"><div class="legend-color" style="background:brown;"></div>Game Drive</div>
+      <div class="legend-item"><div class="legend-color" style="background:darkblue;"></div>Flight</div>
+      <div class="legend-item"><div class="legend-color" style="background:blue;"></div>Boat</div>
+      <div class="legend-item"><div class="legend-color" style="background:green;"></div>Run</div>
+      <div class="legend-item"><div class="legend-color" style="background:red;"></div>Ride/Bike</div>
+      <div class="legend-item"><div class="legend-color" style="background:gray;"></div>Other</div>
+    </div>
+
+    <div class="stats" id="stats">Loading…</div>
+
+    <div class="controls-fields">
+      <label>Year
+        <select id="year"></select>
+      </label>
+      <label>Month
+        <select id="month"></select>
+      </label>
+      <button id="reset">Reset</button>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const africaBounds = [[-35.0, -20.0], [38.0, 52.0]];
+    const map = L.map('map', {
+      maxBounds: africaBounds,
+      maxBoundsViscosity: 1.0,
+      dragging: true,
+      scrollWheelZoom: true,
+      doubleClickZoom: true,
+      touchZoom: true
+    }).setView([6.0,25.0],4);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ maxZoom:19 }).addTo(map);
+    const layerGroup = L.layerGroup().addTo(map);
+    let features = [];
+
+    function hideLoading(){ document.getElementById('loading').style.display='none'; }
+    function showError(msg){
+      const el = document.getElementById('stats');
+      el.innerHTML = `<div class="error">${msg}</div>`;
+      hideLoading();
+    }
+
+    function parseTravelActivity(name) {
+      if(!name) return { name, type:'unknown' };
+      const match = name.match(/\((.*?)\)/);
+      let typeText = match ? match[1].toLowerCase() : '';
+      let activityType = '';
+      if(typeText.includes('brakkies')) activityType='self drive';
+      else if(typeText.includes('game viewer')) activityType='game drive';
+      else if(typeText.includes('flight')) activityType='flight';
+      else if(typeText.includes('boat') || typeText.includes('mokoro')) activityType='boat';
+      else activityType='unknown';
+      const cleanName = name.replace(/\s*\(.*?\)\s*/g,'').trim();
+      return { name: cleanName, type: activityType };
+    }
+
+    Promise.all([
+      fetch('data/activities.geojson?_='+Date.now()).then(r=>r.json()),
+      fetch('data/travel.geojson?_='+Date.now()).then(r=>r.json())
+    ]).then(([activitiesGeo, travelGeo])=>{
+      features = activitiesGeo.features.concat(
+        travelGeo.features.map(f=>{
+          const p = f.properties||{};
+          const parsed = parseTravelActivity(p.name);
+          p.name = parsed.name;
+          p.type = parsed.type;
+          return { ...f, properties: p };
+        })
+      );
+      initFilters(features);
+      draw(features);
+      document.getElementById('stats').textContent = `${features.length} activities loaded`;
+      hideLoading();
+    }).catch(err=>{
+      console.error(err);
+      showError('Failed to load activity data.');
+    });
+
+    function draw(list){
+      layerGroup.clearLayers();
+      const gj=L.geoJSON({type:'FeatureCollection', features:list},{
+        style: function(feat){
+          const t = (feat.properties.type||'').toLowerCase();
+          if(t==='self drive') return {weight:3, color:'black'};
+          if(t==='game drive') return {weight:3, color:'brown'};
+          if(t==='flight') return {weight:3, color:'darkblue'};
+          if(t==='boat') return {weight:3, color:'blue'};
+          if(t.includes('run')) return {weight:3, color:'green'};
+          if(t.includes('ride') || t.includes('bike') || t.includes('cycle')) return {weight:3, color:'red'};
+          return {weight:3, color:'gray'};
+        },
+        onEachFeature:(feat,layer)=>{
+          const p=feat.properties||{};
+          const title=[p.name,p.date].filter(Boolean).join(' — ');
+          layer.bindPopup(`<b>${title}</b><br>${p.type}`);
+        }
+      }).addTo(layerGroup);
+
+      if(list.length){
+        const bounds=gj.getBounds();
+        if(bounds.isValid()) map.fitBounds(bounds,{maxZoom:12,padding:[20,20]});
+      }
+
+      document.getElementById('stats').textContent = `${list.length} activities shown`;
+    }
+
+    function initFilters(list){
+      const years = Array.from(new Set(list.map(f=>f.properties?.year).filter(Boolean))).sort();
+      const months = [...Array(12).keys()].map(i=>i+1);
+
+      const ySel = document.getElementById('year');
+      const mSel = document.getElementById('month');
+
+      ySel.innerHTML = '<option value="">All</option>' + years.map(y=>`<option>${y}</option>`).join('');
+      mSel.innerHTML = '<option value="">All</option>' + months.map(m=>`<option>${m}</option>`).join('');
+
+      function apply(){
+        const y=ySel.value, m=mSel.value;
+        const filtered = list.filter(f=>{
+          const p=f.properties||{};
+          if(y && String(p.year)!==y) return false;
+          if(m && String(p.month)!==m) return false;
+          return true;
+        });
+        draw(filtered);
+      }
+
+      ySel.onchange = apply;
+      mSel.onchange = apply;
+      document.getElementById('reset').onclick = ()=>{ ySel.value=''; mSel.value=''; apply(); };
+    }
+  </script>
+</body>
+</html>

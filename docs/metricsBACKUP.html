@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live TSS & CTL Dashboard</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .nav {
+            background: #333;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        .nav a {
+            color: white;
+            margin-right: 20px;
+            text-decoration: none;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        h2 {
+            color: #444;
+            border-bottom: 2px solid #007AFF;
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+        
+        /* Fitness Indicators */
+        .fitness-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 30px 0;
+            align-items: center;
+        }
+        
+        .fitness-box {
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            min-width: 120px;
+            position: relative;
+        }
+        
+        .fitness-box.fitness {
+            background: #e3f2fd;
+            border-color: #2196f3;
+        }
+        
+        .fitness-box.fatigue {
+            background: #fff3e0;
+            border-color: #ff9800;
+        }
+        
+        .fitness-box.form {
+            background: #f3e5f5;
+            border-color: #9c27b0;
+        }
+        
+        .fitness-value {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .fitness-box.fitness .fitness-value {
+            color: #2196f3;
+        }
+        
+        .fitness-box.fatigue .fitness-value {
+            color: #ff9800;
+        }
+        
+        .fitness-box.form .fitness-value {
+            color: #9c27b0;
+        }
+        
+        .fitness-label {
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        /* Fitness Ramp Rates */
+        .ramp-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin: 20px 0;
+        }
+        
+        .ramp-title {
+            text-align: center;
+            font-size: 24px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .ramp-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+        }
+        
+        .ramp-item {
+            text-align: center;
+        }
+        
+        .ramp-period {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .ramp-duration {
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 15px;
+        }
+        
+        .ramp-chart {
+            width: 100%;
+            height: 150px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .ramp-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2196f3;
+        }
+
+        /* Prediction Chart Section */
+        .prediction-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin: 20px 0;
+        }
+        
+        .prediction-chart {
+            width: 100%;
+            height: 400px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .metric-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #007AFF;
+        }
+        .metric-box h3 {
+            margin: 0 0 15px;
+            font-size: 18px;
+            color: #333;
+        }
+        .metric-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #007AFF;
+            margin: 10px 0;
+        }
+        .last-updated {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .activity-log {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        .activity-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        .activity-details {
+            flex-grow: 1;
+        }
+        .activity-date {
+            font-weight: bold;
+            color: #333;
+        }
+        .activity-type {
+            color: #007AFF;
+            font-weight: 500;
+        }
+        .activity-stats {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .tss-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #28a745;
+            min-width: 80px;
+            text-align: center;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .refresh-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            float: right;
+            margin-bottom: 10px;
+        }
+        .refresh-btn:hover {
+            background: #218838;
+        }
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .stat-box {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .sample-data {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 12px;
+            color: #999;
+        }
+        
+        /* Activity Filter Styles */
+        .filter-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .filter-btn {
+            padding: 12px 24px;
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .filter-btn:hover {
+            background: #e9ecef;
+            border-color: #007AFF;
+        }
+        
+        .filter-btn.active {
+            background: #007AFF;
+            color: white;
+            border-color: #007AFF;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+    <nav class="nav">
+        <a href="index.html">Sports Map</a>
+        <a href="scratchmap.html">Scratch Map</a>
+        <a href="all_data.html">All Data</a>
+        <a href="metrics.html">CTL</a>
+    </nav>
+
+    <div class="container">
+        <h1>Live TSS & CTL Dashboard</h1>
+        <button class="refresh-btn" onclick="loadActivitiesData()">🔄 Refresh Data</button>
+        
+        <!-- Fitness Indicators -->
+        <div class="fitness-indicators">
+            <div class="fitness-box fatigue">
+                <div class="fitness-value" id="fatigue-value">--</div>
+                <div class="fitness-label">Fatigue (ATL)</div>
+            </div>
+            <div class="fitness-box fitness">
+                <div class="fitness-value" id="fitness-value">--</div>
+                <div class="fitness-label">Fitness (CTL)</div>
+            </div>
+            <div class="fitness-box form">
+                <div class="fitness-value" id="form-value">--</div>
+                <div class="fitness-label">Form (TSB)</div>
+            </div>
+        </div>
+        
+        <!-- Activity Type Filter -->
+        <div class="container">
+            <h2>Activity Filter</h2>
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-filter="all" onclick="filterActivities('all')">All Activities</button>
+                <button class="filter-btn" data-filter="run" onclick="filterActivities('run')">Running Only</button>
+                <button class="filter-btn" data-filter="ride" onclick="filterActivities('ride')">Cycling Only</button>
+            </div>
+        </div>
+        
+        <!-- Fitness Ramp Rates -->
+        <div class="ramp-section">
+            <h2 class="ramp-title">Fitness Ramp Rates</h2>
+            <div class="ramp-grid">
+                <div class="ramp-item">
+                    <div class="ramp-period">7</div>
+                    <div class="ramp-duration">Last 7 days</div>
+                    <div class="ramp-chart">
+                        <canvas id="chart7days" width="100" height="150"></canvas>
+                        <div class="sample-data">Sample Data</div>
+                    </div>
+                    <div class="ramp-value" id="ramp7days">--</div>
+                </div>
+                
+                <div class="ramp-item">
+                    <div class="ramp-period">28</div>
+                    <div class="ramp-duration">Last 28 days</div>
+                    <div class="ramp-chart">
+                        <canvas id="chart28days" width="100" height="150"></canvas>
+                        <div class="sample-data">Sample Data</div>
+                    </div>
+                    <div class="ramp-value" id="ramp28days">--</div>
+                </div>
+                
+                <div class="ramp-item">
+                    <div class="ramp-period">90</div>
+                    <div class="ramp-duration">Last 90 days</div>
+                    <div class="ramp-chart">
+                        <canvas id="chart90days" width="100" height="150"></canvas>
+                        <div class="sample-data">Sample Data</div>
+                    </div>
+                    <div class="ramp-value" id="ramp90days">--</div>
+                </div>
+                
+                <div class="ramp-item">
+                    <div class="ramp-period">365</div>
+                    <div class="ramp-duration">Last 365 days</div>
+                    <div class="ramp-chart">
+                        <canvas id="chart365days" width="100" height="150"></canvas>
+                        <div class="sample-data">Sample Data</div>
+                    </div>
+                    <div class="ramp-value" id="ramp365days">--</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 90-Day Historical + 30-Day Prediction -->
+        <div class="prediction-section">
+            <h2 class="ramp-title">90-Day History + 30-Day TSS Prediction</h2>
+            <div class="prediction-chart">
+                <canvas id="predictionChart" width="100%" height="400"></canvas>
+            </div>
+            <div style="text-align: center; margin-top: 15px;">
+                <span style="font-size: 16px; color: #666;">
+                    Based on 7-day average TSS: <span id="avg7DayTSS" style="color: #2196f3; font-weight: bold;">--</span>
+                </span>
+            </div>
+        </div>
+
+        <!-- CTL Metrics Display -->
+        <div class="metric-box">
+            <h3>CTL / TSS Metrics (42-day exponential weighted average)</h3>
+            <div class="metric-value" id="ctl-all">All: Loading...</div>
+            <div class="metric-value" id="ctl-run">Running: Loading...</div>
+            <div class="metric-value" id="ctl-ride">Cycling: Loading...</div>
+            <div class="last-updated" id="lastUpdated"></div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="summary-stats">
+            <div class="stat-box">
+                <div class="stat-label">Total Activities (42 days)</div>
+                <div class="stat-value" id="totalActivities">--</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Total TSS (42 days)</div>
+                <div class="stat-value" id="totalTSS">--</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Avg TSS/day</div>
+                <div class="stat-value" id="avgTSSPerDay">--</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Last 7 days TSS</div>
+                <div class="stat-value" id="weeklyTSS">--</div>
+            </div>
+        </div>
+        
+        <h2>Recent Activities (Last 42 Days)</h2>
+        <div id="loadingMessage" class="loading">Loading activities...</div>
+        <div id="errorMessage" class="error" style="display: none;"></div>
+        <div class="activity-log" id="activityLog" style="display: none;"></div>
+    </div>
+
+    <script>
+        let allActivities = [];
+        let charts = {};
+        let currentFilter = 'all'; // Track current filter
+
+        // Helper functions
+        function hr_to_if(hr) {
+            if (!hr) return 0;
+            if (hr >= 155 && hr <= 168) return hr / 161.5;
+            if (hr >= 169 && hr <= 177) return hr / 173;
+            if (hr >= 178 && hr <= 189) return hr / 183.5;
+            if (hr >= 190 && hr <= 194) return hr / 192;
+            if (hr >= 195 && hr <= 200) return hr / 197.5;
+            if (hr >= 201) return hr / 228;
+            return hr / 183.5;
+        }
+
+        function pace_to_if(avg_speed) {
+            return avg_speed ? avg_speed / 4.76 : 0;
+        }
+
+        // Get daily TSS totals for a date range (helper function)
+        function getDailyTSS(activities, startDate, numDays, filterSport = null) {
+            let dailyTSS = Array(numDays).fill(0);
+            
+            activities.forEach(f => {
+                const p = f.properties;
+                const sport = (p.type || '').toLowerCase();
+                if (filterSport && sport.indexOf(filterSport) < 0) return;
+                
+                const activityDate = new Date(p.date);
+                const dayDiff = Math.floor((startDate - activityDate) / (24 * 3600 * 1000));
+                
+                if (dayDiff >= 0 && dayDiff < numDays) {
+                    dailyTSS[numDays - 1 - dayDiff] += p.tss || 0;
+                }
+            });
+            
+            return dailyTSS;
+        }
+
+        // Activity Filter Function
+        function filterActivities(filterType) {
+            currentFilter = filterType;
+            
+            // Update button states
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-filter="${filterType}"]`).classList.add('active');
+            
+            // Filter activities based on type
+            let filteredActivities = allActivities;
+            if (filterType === 'run') {
+                filteredActivities = allActivities.filter(f => {
+                    const sport = (f.properties.type || '').toLowerCase();
+                    return sport.includes('run');
+                });
+            } else if (filterType === 'ride') {
+                filteredActivities = allActivities.filter(f => {
+                    const sport = (f.properties.type || '').toLowerCase();
+                    return sport.includes('ride') || sport.includes('cycle') || sport.includes('bike');
+                });
+            }
+            
+            // Recalculate and update all metrics with filtered data
+            updateAllMetrics(filteredActivities);
+        }
+
+        // Update all metrics with filtered activities
+        function updateAllMetrics(activities) {
+            // Update fitness indicators
+            const currentCTL = computeCTL(activities);
+            const fatigue = calculateFatigue(activities);
+            const form = calculateForm(activities);
+            
+            document.getElementById('fitness-value').textContent = currentCTL;
+            document.getElementById('fatigue-value').textContent = fatigue;
+            document.getElementById('form-value').textContent = form;
+            
+            // Update ramp rate charts
+            const periods = [7, 28, 90, 365];
+            periods.forEach(days => {
+                const ctlData = computeDailyCTL(activities, days);
+                createChart(`chart${days}days`, ctlData, days);
+                
+                // Calculate ramp rate (change from first to last)
+                const firstValue = ctlData[0] || 0;
+                const lastValue = ctlData[ctlData.length - 1] || 0;
+                const rampRate = Math.round(lastValue - firstValue);
+                
+                document.getElementById(`ramp${days}days`).textContent = rampRate >= 0 ? `+${rampRate}` : rampRate;
+            });
+            
+            // Create the prediction chart
+            createPredictionChart(activities);
+            
+            // Update CTL metrics
+            document.getElementById('ctl-all').textContent = "All: " + computeCTL(activities);
+            document.getElementById('ctl-run').textContent = "Running: " + computeCTL(activities, "run");
+            document.getElementById('ctl-ride').textContent = "Cycling: " + computeCTL(activities, "ride");
+            
+            // Update summary stats and activity log
+            calculateSummaryStats(activities);
+            updateActivityLog(activities);
+        }
+
+        // Compute daily CTL values for a given period using proper exponential weighting
+        function computeDailyCTL(activities, days) {
+            const today = new Date();
+            const dailyCTL = [];
+            const CTL_TC = 42; // CTL time constant (42 days)
+            const exp_const = Math.exp(-1 / CTL_TC);
+            
+            // We need to go back far enough to get a good CTL baseline (at least 120 days)
+            const lookbackDays = Math.max(120, days + 42);
+            const startDate = new Date(today);
+            startDate.setDate(startDate.getDate() - lookbackDays + 1);
+            
+            // Get daily TSS for the entire lookback period
+            const allDailyTSS = getDailyTSS(activities, startDate, lookbackDays);
+            
+            // Calculate CTL for each day using exponential moving average
+            let ctl = 0;
+            
+            // Build up CTL from the beginning
+            for (let i = 0; i < lookbackDays; i++) {
+                ctl = (allDailyTSS[i] * (1 - exp_const)) + (ctl * exp_const);
+                
+                // Only store CTL values for the requested period
+                const dayIndex = lookbackDays - days + i;
+                if (dayIndex >= 0) {
+                    dailyCTL.push(ctl);
+                }
+            }
+            
+            return dailyCTL.slice(-days); // Ensure we return exactly 'days' worth of data
+        }
+
+        // Compute proper exponentially weighted CTL (42-day time constant)
+        function computeCTL(activities, filterSport = null) {
+            const today = new Date();
+            const CTL_TC = 42; // CTL time constant (42 days)
+            const exp_const = Math.exp(-1 / CTL_TC);
+            
+            // Go back 120 days to get a good baseline for CTL calculation
+            const lookbackDays = 120;
+            const dailyTSS = getDailyTSS(activities, today, lookbackDays, filterSport);
+            
+            // Calculate CTL using exponential moving average
+            let ctl = 0;
+            
+            // Start from oldest day and work forward
+            for (let i = 0; i < lookbackDays; i++) {
+                ctl = (dailyTSS[i] * (1 - exp_const)) + (ctl * exp_const);
+            }
+            
+            return Math.round(ctl);
+        }
+
+        // Calculate proper exponentially weighted ATL (7-day time constant)
+        function calculateFatigue(activities) {
+            const today = new Date();
+            const ATL_TC = 7; // ATL time constant (7 days)
+            const exp_const = Math.exp(-1 / ATL_TC);
+            
+            // Go back 30 days for ATL calculation
+            const lookbackDays = 30;
+            const dailyTSS = getDailyTSS(activities, today, lookbackDays);
+            
+            // Calculate ATL using exponential moving average
+            let atl = 0;
+            
+            // Start from oldest day and work forward
+            for (let i = 0; i < lookbackDays; i++) {
+                atl = (dailyTSS[i] * (1 - exp_const)) + (atl * exp_const);
+            }
+            
+            return Math.round(atl);
+        }
+
+        // Calculate Form (TSB) = CTL - ATL
+        function calculateForm(activities) {
+            const ctl = computeCTL(activities);
+            const atl = calculateFatigue(activities);
+            return Math.round(ctl - atl);
+        }
+
+        // Create chart for ramp rates
+        function createChart(canvasId, data, days) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            if (charts[canvasId]) {
+                charts[canvasId].destroy();
+            }
+            
+            const labels = Array(days).fill().map((_, i) => '');
+            
+            charts[canvasId] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        borderColor: '#2196f3',
+                        backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: false
+                        },
+                        y: {
+                            display: false,
+                            beginAtZero: true
+                        }
+                    },
+                    elements: {
+                        point: {
+                            radius: 0
+                        }
+                    }
+                }
+            });
+        }
+
+        // Create the prediction chart with 90 days CTL history + 30 days prediction
+        function createPredictionChart(activities) {
+            const canvas = document.getElementById('predictionChart');
+            const ctx = canvas.getContext('2d');
+            
+            if (charts['predictionChart']) {
+                charts['predictionChart'].destroy();
+            }
+
+            const today = new Date();
+            
+            // Get last 7 days average TSS
+            let last7DaysTSS = 0;
+            activities.forEach(f => {
+                const activityDate = new Date(f.properties.date);
+                const dayDiff = Math.floor((today - activityDate) / (24 * 3600 * 1000));
+                
+                if (dayDiff >= 0 && dayDiff < 7) {
+                    last7DaysTSS += f.properties.tss || 0;
+                }
+            });
+            const avg7DayTSS = Math.round(last7DaysTSS / 7);
+            document.getElementById('avg7DayTSS').textContent = avg7DayTSS;
+
+            // Get historical CTL data (90 days) using proper exponential weighting
+            const historicalCTL = computeDailyCTL(activities, 90);
+            const labels = [];
+            
+            // Create labels for historical data
+            for (let i = 89; i >= 0; i--) {
+                const targetDate = new Date(today);
+                targetDate.setDate(targetDate.getDate() - i);
+                labels.push(targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+            }
+            
+            // Prediction CTL data (30 days) using exponential weighting
+            const predictionCTL = [];
+            const predictionLabels = [];
+            
+            const CTL_TC = 42;
+            const exp_const = Math.exp(-1 / CTL_TC);
+            
+            // Start with current CTL
+            let currentCTL = computeCTL(activities);
+            
+            for (let i = 1; i <= 30; i++) {
+                const futureDate = new Date(today);
+                futureDate.setDate(futureDate.getDate() + i);
+                
+                // Update CTL with predicted daily TSS
+                currentCTL = (avg7DayTSS * (1 - exp_const)) + (currentCTL * exp_const);
+                
+                predictionCTL.push(currentCTL);
+                predictionLabels.push(futureDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+            }
+            
+            // Combine labels
+            const allLabels = [...labels, ...predictionLabels];
+            
+            charts['predictionChart'] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: allLabels,
+                    datasets: [
+                        {
+                            label: 'Historical CTL (42-day exponential avg)',
+                            data: [...historicalCTL, ...Array(30).fill(null)],
+                            borderColor: '#2196f3',
+                            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                            fill: false,
+                            tension: 0.1,
+                            pointRadius: 1,
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Predicted CTL',
+                            data: [...Array(90).fill(null), ...predictionCTL],
+                            borderColor: '#ff9800',
+                            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                            borderDash: [5, 5],
+                            fill: false,
+                            tension: 0.1,
+                            pointRadius: 2,
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            },
+                            ticks: {
+                                maxTicksLimit: 10
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'CTL (42-day Exponential Average)'
+                            },
+                            beginAtZero: true
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        function calculateSummaryStats(activities) {
+            const today = new Date();
+            const last42Days = activities.filter(f => {
+                const activityDate = new Date(f.properties.date);
+                const dayDiff = Math.floor((today - activityDate) / (24 * 3600 * 1000));
+                return dayDiff >= 0 && dayDiff < 42;
+            });
+
+            const last7Days = activities.filter(f => {
+                const activityDate = new Date(f.properties.date);
+                const dayDiff = Math.floor((today - activityDate) / (24 * 3600 * 1000));
+                return dayDiff >= 0 && dayDiff < 7;
+            });
+
+            const totalActivities = last42Days.length;
+            const totalTSS = last42Days.reduce((sum, f) => sum + (f.properties.tss || 0), 0);
+            const avgTSSPerDay = Math.round(totalTSS / 42);
+            const weeklyTSS = last7Days.reduce((sum, f) => sum + (f.properties.tss || 0), 0);
+
+            document.getElementById('totalActivities').textContent = totalActivities;
+            document.getElementById('totalTSS').textContent = totalTSS;
+            document.getElementById('avgTSSPerDay').textContent = avgTSSPerDay;
+            document.getElementById('weeklyTSS').textContent = weeklyTSS;
+        }
+
+        function formatDuration(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+        }
+
+        function formatDistance(meters) {
+            if (!meters) return '';
+            const km = (meters / 1000).toFixed(1);
+            return `${km}km`;
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric',
+                weekday: 'short'
+            });
+        }
+
+        function updateActivityLog(activities) {
+            const logContainer = document.getElementById('activityLog');
+            const today = new Date();
+            
+            const recentActivities = activities
+                .filter(f => {
+                    const activityDate = new Date(f.properties.date);
+                    const dayDiff = Math.floor((today - activityDate) / (24 * 3600 * 1000));
+                    return dayDiff >= 0 && dayDiff < 42;
+                })
+                .sort((a, b) => new Date(b.properties.date) - new Date(a.properties.date));
+
+            if (recentActivities.length === 0) {
+                logContainer.innerHTML = '<div class="activity-item">No activities found in the last 42 days.</div>';
+                return;
+            }
+
+            logContainer.innerHTML = recentActivities.map(f => {
+                const p = f.properties;
+                const sport = (p.type || 'Unknown').charAt(0).toUpperCase() + (p.type || 'unknown').slice(1);
+                const duration = formatDuration(p.moving_time || 0);
+                const distance = formatDistance(p.distance);
+                const avgSpeed = p.average_speed ? `${(p.average_speed * 3.6).toFixed(1)} km/h` : '';
+                const avgHR = p.average_heartrate ? `${Math.round(p.average_heartrate)} bpm` : '';
+                const avgPower = p.average_watts ? `${Math.round(p.average_watts)}W` : '';
+                
+                let statsText = duration;
+                if (distance) statsText += ` • ${distance}`;
+                if (avgSpeed) statsText += ` • ${avgSpeed}`;
+                if (avgHR) statsText += ` • ${avgHR}`;
+                if (avgPower) statsText += ` • ${avgPower}`;
+
+                return `
+                    <div class="activity-item">
+                        <div class="activity-details">
+                            <div class="activity-date">${formatDate(p.date)}</div>
+                            <div class="activity-type">${sport}</div>
+                            <div class="activity-stats">${statsText}</div>
+                        </div>
+                        <div class="tss-value">${p.tss || 0}</div>
+                    </div>
+                `;
+            }).join('');
+
+            logContainer.style.display = 'block';
+        }
+
+        function loadActivitiesData() {
+            console.log('Loading activities data...');
+            document.getElementById('loadingMessage').style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('activityLog').style.display = 'none';
+            
+            fetch('data/activities.geojson?_=' + Date.now())
+                .then(r => {
+                    console.log('Fetch response:', r.status, r.statusText);
+                    if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+                    return r.json();
+                })
+                .then(geo => {
+                    console.log('GeoJSON loaded:', geo);
+                    const features = geo.features || [];
+                    console.log('Number of activities:', features.length);
+                    allActivities = features;
+                    
+                    // Calculate TSS per activity using zone-based data when available
+                    features.forEach(f => {
+                        const p = f.properties || {};
+                        const sport = (p.type || '').toLowerCase();
+                        const duration = p.moving_time || 0;
+                        let tss = 0;
+                        
+                        // Use zone-based TSS if available (most accurate)
+                        if (p.zone_based_tss && p.zone_based_tss > 0) {
+                            tss = p.zone_based_tss;
+                        } else {
+                            // Fallback to average-based calculations
+                            if (sport.includes('run')) {
+                                const avg_speed = p.average_speed || (p.distance / duration);
+                                const paceIF = pace_to_if(avg_speed);
+                                let paceTSS = (duration / 3600) * paceIF * paceIF * 100;
+                                
+                                let hrTSS = 0;
+                                if (p.average_heartrate) {
+                                    const hrIF = hr_to_if(p.average_heartrate);
+                                    hrTSS = (duration / 3600) * hrIF * hrIF * 100;
+                                }
+                                
+                                tss = (hrTSS > paceTSS) ? hrTSS : paceTSS;
+                                // Apply 10% increase for running
+                                tss = tss * 1.1;
+                                
+                            } else if (sport.includes('ride') || sport.includes('cycle') || sport.includes('bike')) {
+                                // Cycling TSS calculation - use highest value between power and HR
+                                const FTP = 280; // Your Functional Threshold Power - adjust as needed
+                                
+                                let powerTSS = 0;
+                                let hrTSS = 0;
+                                
+                                // Calculate power-based TSS if watts available
+                                const watts = p.weighted_average_watts || p.average_watts;
+                                if (watts && watts > 0) {
+                                    const IF = watts / FTP;
+                                    powerTSS = (duration / 3600) * IF * IF * 100;
+                                }
+                                
+                                // Calculate HR-based TSS if heart rate available
+                                if (p.average_heartrate) {
+                                    const hrIF = hr_to_if(p.average_heartrate);
+                                    hrTSS = (duration / 3600) * hrIF * hrIF * 100;
+                                }
+                                
+                                // Use the higher TSS value (power or HR)
+                                tss = Math.max(powerTSS, hrTSS);
+                            }
+                        }
+                        
+                        // Store final TSS (zone-based data already includes proper calculations)
+                        p.tss = Math.round(tss);
+                        console.log('Activity TSS:', p.date, p.type, p.tss);
+                    });
+                    
+                    // Initialize with all activities (default filter)
+                    console.log('Updating all metrics...');
+                    updateAllMetrics(features);
+                    document.getElementById('lastUpdated').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+                    
+                    document.getElementById('loadingMessage').style.display = 'none';
+                })
+                .catch(error => {
+                    console.error('Error loading activities:', error);
+                    document.getElementById('loadingMessage').style.display = 'none';
+                    document.getElementById('errorMessage').style.display = 'block';
+                    document.getElementById('errorMessage').textContent = `Error loading activities: ${error.message}`;
+                });
+        }
+
+        // Auto-refresh every 5 minutes
+        setInterval(loadActivitiesData, 5 * 60 * 1000);
+        
+        // Load data on page load
+        loadActivitiesData();
+    </script>
+</body>
+</html>

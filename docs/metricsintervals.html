@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='24' font-size='22'%3E📊%3C/text%3E%3C/svg%3E">
+    <title>Intervals.icu Load & CTL Dashboard</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .nav {
+            background: #333;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        .nav a {
+            color: white;
+            margin-right: 20px;
+            text-decoration: none;
+        }
+        .nav a.active { font-weight: bold; }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        h2 {
+            color: #444;
+            border-bottom: 2px solid #007AFF;
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+        
+        /* Fitness Indicators */
+        .fitness-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 30px 0;
+            align-items: center;
+        }
+        
+        .fitness-box {
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            min-width: 120px;
+            position: relative;
+        }
+        
+        .fitness-box.fitness {
+            background: #e3f2fd;
+            border-color: #2196f3;
+        }
+        
+        .fitness-box.fatigue {
+            background: #fff3e0;
+            border-color: #ff9800;
+        }
+        
+        .fitness-box.form {
+            background: #f3e5f5;
+            border-color: #9c27b0;
+        }
+        
+        .fitness-value {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .fitness-box.fitness .fitness-value {
+            color: #2196f3;
+        }
+        
+        .fitness-box.fatigue .fitness-value {
+            color: #ff9800;
+        }
+        
+        .fitness-box.form .fitness-value {
+            color: #9c27b0;
+        }
+        
+        .fitness-label {
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        /* Fitness Ramp Rates */
+        .ramp-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin: 20px 0;
+        }
+        
+        .ramp-title {
+            text-align: center;
+            font-size: 24px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .ramp-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+        }
+        
+        .ramp-item {
+            text-align: center;
+        }
+        
+        .ramp-period {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .ramp-duration {
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 15px;
+        }
+        
+        .ramp-chart {
+            width: 100%;
+            height: 150px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .ramp-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2196f3;
+        }
+
+        /* Prediction Chart Section */
+        .prediction-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin: 20px 0;
+        }
+        
+        .prediction-chart {
+            width: 100%;
+            height: 400px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .metric-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #007AFF;
+        }
+        .metric-box h3 {
+            margin: 0 0 15px;
+            font-size: 18px;
+            color: #333;
+        }
+        .metric-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #007AFF;
+            margin: 10px 0;
+        }
+        .last-updated {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .activity-log {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        .activity-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        .activity-details {
+            flex-grow: 1;
+        }
+        .activity-date {
+            font-weight: bold;
+            color: #333;
+        }
+        .activity-type {
+            color: #007AFF;
+            font-weight: 500;
+        }
+        .activity-stats {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .tss-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #28a745;
+            min-width: 80px;
+            text-align: center;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .refresh-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            float: right;
+            margin-bottom: 10px;
+        }
+        .refresh-btn:hover {
+            background: #218838;
+        }
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .stat-box {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .sample-data {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 12px;
+            color: #999;
+        }
+        
+        /* Activity Filter Styles */
+        .filter-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .filter-btn {
+            padding: 12px 24px;
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .filter-btn:hover {
+            background: #e9ecef;
+            border-color: #007AFF;
+        }
+        
+        .filter-btn.active {
+            background: #007AFF;
+            color: white;
+            border-color: #007AFF;
+        }
+        
+        .data-source-badge {
+            display: inline-block;
+            background: #4caf50;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        /* AI training coach */
+        .ai-panel {
+            background: linear-gradient(180deg, #f8f9ff 0%, #fff 100%);
+            border: 1px solid #c5cae9;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 24px 0;
+        }
+        .ai-panel h2 {
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .ai-panel .ai-badge {
+            font-size: 12px;
+            background: #5c6bc0;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        .ai-panel .ai-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: #555;
+        }
+        .ai-panel .ai-controls label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+        .ai-context-preview {
+            width: 100%;
+            min-height: 120px;
+            font-family: ui-monospace, monospace;
+            font-size: 12px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            resize: vertical;
+            background: #fafafa;
+            margin-bottom: 12px;
+        }
+        .ai-chat-log {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fff;
+            min-height: 220px;
+            max-height: 420px;
+            overflow-y: auto;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .ai-msg {
+            margin-bottom: 14px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+        .ai-msg.user {
+            background: #e3f2fd;
+            margin-left: 24px;
+            border-left: 3px solid #2196f3;
+        }
+        .ai-msg.assistant {
+            background: #f3e5f5;
+            margin-right: 24px;
+            border-left: 3px solid #9c27b0;
+        }
+        .ai-msg.system-note {
+            background: #fff8e1;
+            font-size: 12px;
+            color: #666;
+        }
+        .ai-msg .ai-role {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        .ai-input-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .ai-input-row textarea {
+            flex: 1;
+            min-width: 200px;
+            min-height: 44px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        .ai-input-row button {
+            padding: 10px 18px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .ai-btn-send {
+            background: #5c6bc0;
+            color: white;
+        }
+        .ai-btn-send:hover { background: #3f51b5; }
+        .ai-btn-secondary {
+            background: #eceff1;
+            color: #333;
+        }
+        .ai-status {
+            font-size: 13px;
+            color: #666;
+            margin-top: 8px;
+        }
+        .ai-status.error { color: #c62828; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+    <nav class="nav">
+        <a href="index.html">Sports Map</a>
+        <a href="scratchmap.html">Scratch Map</a>
+        <a href="all_data.html">All Data</a>
+        <a href="metrics.html">CTL (Strava)</a>
+        <a href="metricsintervals.html" class="active">CTL (Intervals.icu)</a>
+    </nav>
+
+    <div class="container">
+        <h1>Intervals.icu Load & CTL Dashboard <span class="data-source-badge">Server-backed</span></h1>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px;">
+            <button type="button" class="refresh-btn" onclick="loadActivitiesData()">🔄 Refresh Data</button>
+        </div>
+
+        
+        <!-- Fitness Indicators -->
+        <div class="fitness-indicators">
+            <div class="fitness-box fatigue">
+                <div class="fitness-value" id="fatigue-value">--</div>
+                <div class="fitness-label">Fatigue</div>
+            </div>
+            <div class="fitness-box fitness">
+                <div class="fitness-value" id="fitness-value">--</div>
+                <div class="fitness-label">Fitness</div>
+            </div>
+            <div class="fitness-box form">
+                <div class="fitness-value" id="form-value">--</div>
+                <div class="fitness-label">Form</div>
+            </div>
+        </div>
+        
+        <!-- Activity Type Filter -->
+        <div class="container">
+            <h2>Activity Filter</h2>
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-filter="all" onclick="filterActivities('all')">All Activities</button>
+                <button class="filter-btn" data-filter="run" onclick="filterActivities('run')">Running Only</button>
+                <button class="filter-btn" data-filter="ride" onclick="filterActivities('ride')">Cycling Only</button>
+            </div>
+        </div>
+
+        <!-- Race Filter -->
+        <div class="container">
+            <h2>Race Filter</h2>
+            <div style="margin: 20px 0;">
+                <select id="raceDropdown" onchange="filterByRace(this.value)" style="padding: 10px; border-radius: 6px; border: 2px solid #ddd; font-size: 16px; min-width: 300px;">
+                    <option value="">Select a race to view day before data...</option>
+                </select>
+                <p style="font-size: 14px; color: #666; margin-top: 8px;">
+                    <em>Shows activities marked as races in intervals.icu</em>
+                </p>
+            </div>
+            <div id="raceInfo" style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 6px; display: none;"></div>
+        </div>
+        
+        <!-- Fitness Ramp Rates -->
+        <div class="ramp-section">
+            <h2 class="ramp-title">Fitness Ramp Rates</h2>
+            <div class="ramp-grid">
+                <div class="ramp-item">
+                    <div class="ramp-period">7</div>
+                    <div class="ramp-duration">Last 7 days</div>
+                    <div class="ramp-chart">
+                        <canvas id="chart7days" width="100" height="150"></canvas>
+                        <div class="sample-data">Sample Data</div>
+                    </div>
+                    <div class="ramp-value" id="ramp7days">--</div>
+                </div>
+                
+                <div class="ramp-item">
+                    <div class="ramp-period">28</div>
+                    <div class="ramp-duration">Last 28 days</div>
+                    <div class="ramp-chart">
+                        <canvas id="chart28days" width="100" height="150"></canvas>
+                        <div class="sample-data">Sample Data</div>
+                    </div>
+                    <div class="ramp-value" id="ramp28days">--</div>
+                </div>
+                
+                <div class="ramp-item">
+                    <div class="ramp-period">90</div>
+                    <div class="ramp-duration">Last 90 days</div>
+                    <div class="ramp-chart">
+                        <canvas id="chart90days" width="100" height="150"></canvas>
+                        <div class="sample-data">Sample Data</div>
+                    </div>
+                    <div class="ramp-value" id="ramp90days">--</div>
+                </div>
+                
+                <div class="ramp-item">
+                    <div class="ramp-period">365</div>
+                    <div class="ramp-duration">Last 365 days</div>
+                    <div class="ramp-chart">
+                        <canvas id="chart365days" width="100" height="150"></canvas>
+                        <div class="sample-data">Sample Data</div>
+                    </div>
+                    <div class="ramp-value" id="ramp365days">--</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 90-Day Historical + 30-Day Prediction -->
+        <div class="prediction-section">
+            <h2 class="ramp-title">90-Day History + 30-Day Load Prediction</h2>
+            <div class="prediction-chart">
+                <canvas id="predictionChart" width="100%" height="400"></canvas>
+            </div>
+            <div style="text-align: center; margin-top: 15px;">
+                <span style="font-size: 16px; color: #666;">
+                    Based on 7-day average Load: <span id="avg7DayTSS" style="color: #2196f3; font-weight: bold;">--</span>
+                </span>
+            </div>
+        </div>
+
+        <!-- Year-over-Year Comparison -->
+        <div class="prediction-section">
+            <h2 class="ramp-title">Year-over-Year Comparison</h2>
+            
+            <div style="display: flex; justify-content: center; gap: 30px; margin-bottom: 20px; flex-wrap: wrap;">
+                <div style="text-align: center;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #666;">Activity Type</label>
+                    <div class="filter-buttons" style="margin: 0;">
+                        <button class="filter-btn active" data-yoy-filter="run" onclick="updateYoYActivityType('run')">Run</button>
+                        <button class="filter-btn" data-yoy-filter="ride" onclick="updateYoYActivityType('ride')">Cycle</button>
+                    </div>
+                </div>
+                
+                <div style="text-align: center;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #666;">Metric</label>
+                    <div class="filter-buttons" style="margin: 0;">
+                        <button class="filter-btn active" data-yoy-metric="distance" onclick="updateYoYMetric('distance')">Distance</button>
+                        <button class="filter-btn" data-yoy-metric="duration" onclick="updateYoYMetric('duration')">Duration</button>
+                    </div>
+                </div>
+                
+                <div style="text-align: center;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #666;">Compare To</label>
+                    <select id="yoyYearSelect" onchange="updateYoYYear()" style="padding: 12px 24px; background: #f8f9fa; color: #333; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500;">
+                    </select>
+                </div>
+            </div>
+            
+            <div class="prediction-chart">
+                <canvas id="yoyChart" width="100%" height="400"></canvas>
+            </div>
+            
+            <div style="text-align: center; margin-top: 15px; color: #666;">
+                <span id="yoyCurrentYearLabel" style="color: #2196f3; font-weight: bold;">2026</span> vs 
+                <span id="yoyCompareYearLabel" style="color: #ff9800; font-weight: bold;">2025</span>
+                <br>
+                <span style="font-size: 12px; color: #999; margin-top: 5px; display: inline-block;">
+                    Distance &amp; duration from loaded training activities
+                </span>
+            </div>
+        </div>
+
+        <!-- CTL Metrics Display -->
+        <div class="metric-box">
+            <h3>CTL / Load Metrics (exponential formula τ=42)</h3>
+            <div class="metric-value" id="ctl-all">All: Loading...</div>
+            <div class="metric-value" id="ctl-run">Running: Loading...</div>
+            <div class="metric-value" id="ctl-ride">Cycling: Loading...</div>
+            <div class="last-updated" id="lastUpdated"></div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="summary-stats">
+            <div class="stat-box">
+                <div class="stat-label">Total Activities (42 days)</div>
+                <div class="stat-value" id="totalActivities">--</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Total Load (42 days)</div>
+                <div class="stat-value" id="totalTSS">--</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Avg Load/day</div>
+                <div class="stat-value" id="avgTSSPerDay">--</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Last 7 days Load</div>
+                <div class="stat-value" id="weeklyTSS">--</div>
+            </div>
+        </div>
+
+        <!-- AI training coach -->
+        <div class="container ai-panel" id="aiTrainingPanel">
+            <h2>AI training coach <span class="ai-badge">intervals.icu context</span></h2>
+            <p style="font-size: 13px; color: #666; margin-top: 0;">Uses your loaded training metrics. Not medical advice.</p>
+            <div class="ai-controls">
+                <label><input type="checkbox" id="aiAutoOnNewSession" checked> Auto-run insight when a new session appears</label>
+                <button type="button" class="ai-btn-secondary" id="aiBtnRefreshContext">Rebuild context from data</button>
+                <button type="button" class="ai-btn-secondary" id="aiBtnClearChat">Clear chat</button>
+            </div>
+            <div style="font-size: 13px; color: #555; margin-bottom: 6px;">Prompt context sent to the model (updated when data refreshes):</div>
+            <textarea class="ai-context-preview" id="aiContextPreview" readonly placeholder="Load intervals data to generate context…"></textarea>
+            <div class="ai-chat-log" id="aiChatLog"></div>
+            <div class="ai-input-row">
+                <textarea id="aiUserInput" placeholder="Ask about your training, recovery, or next week’s plan…" rows="2"></textarea>
+                <button type="button" class="ai-btn-send" id="aiBtnSend">Send</button>
+            </div>
+            <div class="ai-status" id="aiStatus"></div>
+        </div>
+        
+        <h2>Recent Activities (Last 42 Days)</h2>
+        <div id="loadingMessage" class="loading">Loading...</div>
+        <div id="errorMessage" class="error" style="display: none;"></div>
+        <div class="activity-log" id="activityLog" style="display: none;"></div>
+    </div>
+
+    <script>
+        /** Vercel serverless API (frontend is served from GitHub Pages). */
+        const API_BASE = 'https://strava-29tepzeat-jonobenjamins-projects.vercel.app/api';
+
+        /**
+         * Site gate token — must match PUBLIC_API_TOKEN in Vercel env (NOT your intervals.icu API key).
+         * Leave empty only if PUBLIC_API_TOKEN is unset on Vercel (not recommended for production).
+         */
+        const PUBLIC_API_TOKEN = '';
+
+        /**
+         * If Vercel Deployment Protection is enabled on preview/production, paste the
+         * "Protection Bypass for Automation" secret here (Vercel → Project → Deployment Protection).
+         */
+        const VERCEL_PROTECTION_BYPASS = '';
+
+        /** Headers for all /api/* requests (auth + CORS preflight). */
+        function apiAuthHeaders(extra) {
+            const h = Object.assign({ Accept: 'application/json' }, extra || {});
+            if (PUBLIC_API_TOKEN) {
+                h.Authorization = 'Bearer ' + PUBLIC_API_TOKEN;
+                h['x-api-key'] = PUBLIC_API_TOKEN;
+            }
+            if (VERCEL_PROTECTION_BYPASS) {
+                h['x-vercel-protection-bypass'] = VERCEL_PROTECTION_BYPASS;
+            }
+            return h;
+        }
+
+        /** Loaded activities for dashboards (years). Server proxies chunk-fetch. */
+        const INTERVALS_FETCH_LOOKBACK_DAYS = Math.floor(365.25 * 25);
+        
+        let allActivities = [];
+        let charts = {};
+        let currentFilter = 'all';
+        let currentRaceFilter = '';
+        let yoyActivityType = 'run';
+        let yoyMetric = 'distance';
+        let yoyCompareYear = null;
+
+        let lastActivitiesForMetrics = [];
+        let lastMetricsReferenceDate = new Date();
+        let aiChatMessages = [];
+
+        const AI_SYSTEM_PROMPT = 'You are an endurance training assistant. The athlete shares metrics derived from intervals.icu training load (CTL/ATL with tau 42/7) and recent sessions. Give concise, practical suggestions for training and recovery. You are not a doctor; avoid medical diagnoses. If data is incomplete, say so.';
+
+        function buildTrainingContextSnapshot(activities, referenceDate) {
+            const calcDate = referenceDate || new Date();
+            if (!activities || !activities.length) {
+                return 'No activity data loaded.';
+            }
+            const fitnessAll = computeExponentialFitness(activities, calcDate);
+            const yesterday = new Date(calcDate);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            const yesterdayData = fitnessAll.byDate[yesterdayStr] || { ctl: fitnessAll.ctl, atl: fitnessAll.atl, form: fitnessAll.form };
+            const ctl = Math.round(fitnessAll.ctl);
+            const atl = Math.round(fitnessAll.atl);
+            const form = Math.round(yesterdayData.form);
+            const ctlRun = Math.round(computeExponentialFitness(activities, calcDate, 'run').ctl);
+            const ctlRide = Math.round(computeExponentialFitness(activities, calcDate, 'ride').ctl);
+
+            let last7 = 0;
+            let last42Load = 0;
+            activities.forEach(f => {
+                const dayDiff = Math.floor((calcDate - new Date(f.properties.date)) / 86400000);
+                const load = f.properties.tss || 0;
+                if (dayDiff >= 0 && dayDiff < 7) last7 += load;
+                if (dayDiff >= 0 && dayDiff < 42) last42Load += load;
+            });
+            const avg7DayLoad = Math.round(last7 / 7);
+            const avg42DayLoad = Math.round(last42Load / 42);
+
+            const sorted = [...activities].sort((a, b) => new Date(b.properties.date) - new Date(a.properties.date));
+            const newest = sorted[0];
+            const recent = sorted.slice(0, 16);
+            const recentLines = recent.map(f => {
+                const p = f.properties;
+                const km = p.distance ? (p.distance / 1000).toFixed(1) : '0';
+                const min = Math.round((p.moving_time || 0) / 60);
+                return `${p.date} | ${p.type} | load ${p.tss} | ${km} km | ${min} min`;
+            }).join('\n');
+
+            return [
+                '## Training snapshot (intervals.icu load, exponential CTL/ATL)',
+                `Reference date: ${calcDate.toISOString().split('T')[0]}`,
+                `- Fitness (CTL): ${ctl}`,
+                `- Fatigue (ATL): ${atl}`,
+                `- Form (CTL−ATL, yesterday): ${form}`,
+                `- CTL run-only: ${ctlRun} | CTL ride-only: ${ctlRide}`,
+                `- 7-day average daily load: ${avg7DayLoad} | 42-day average daily load: ${avg42DayLoad}`,
+                '',
+                `## Newest session`,
+                newest ? `${newest.properties.date} | ${newest.properties.type} | load ${newest.properties.tss}` : '(none)',
+                '',
+                '## Recent sessions (newest first)',
+                recentLines
+            ].join('\n');
+        }
+
+        function renderAiChat() {
+            const log = document.getElementById('aiChatLog');
+            if (!log) return;
+            log.innerHTML = aiChatMessages.map((m, i) => {
+                const roleClass = m.role === 'user' ? 'user' : (m.role === 'assistant' ? 'assistant' : 'system-note');
+                const label = m.role === 'user' ? 'You' : (m.role === 'assistant' ? 'Coach' : 'Note');
+                return `<div class="ai-msg ${roleClass}"><div class="ai-role">${label}</div>${escapeAiHtml(m.content)}</div>`;
+            }).join('');
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function escapeAiHtml(s) {
+            const div = document.createElement('div');
+            div.textContent = s;
+            return div.innerHTML;
+        }
+
+        function setAiStatus(text, isError) {
+            const el = document.getElementById('aiStatus');
+            if (!el) return;
+            el.textContent = text || '';
+            el.className = 'ai-status' + (isError ? ' error' : '');
+        }
+
+        function normalizeAssistantContent(raw) {
+            if (raw == null) return '';
+            if (typeof raw === 'string') return raw;
+            if (Array.isArray(raw)) {
+                return raw.map(part => {
+                    if (typeof part === 'string') return part;
+                    if (part && typeof part === 'object') return part.text || part.content || '';
+                    return '';
+                }).join('');
+            }
+            return String(raw);
+        }
+
+        async function callAiChatCompletions(messages) {
+            const res = await fetch(`${API_BASE}/chat`, {
+                method: 'POST',
+                headers: apiAuthHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ messages })
+            });
+            const rawBody = await res.text();
+            let data;
+            try {
+                data = JSON.parse(rawBody);
+            } catch {
+                throw new Error(`AI proxy failed (${res.status}): ${rawBody || res.statusText}`);
+            }
+            if (!res.ok) {
+                const msg = typeof data.error === 'string' ? data.error : JSON.stringify(data.error || data);
+                throw new Error(msg || `HTTP ${res.status}`);
+            }
+            const raw = data.choices?.[0]?.message?.content;
+            const text = normalizeAssistantContent(raw).trim();
+            if (!text) throw new Error('Model returned an empty reply; try another model or retry.');
+            return text;
+        }
+
+        function pushAiMessage(role, content) {
+            aiChatMessages.push({ role, content });
+            renderAiChat();
+        }
+
+        async function runAiSessionInsight(contextText, isAuto) {
+            const userPrompt = isAuto
+                ? `Here is my current training data:\n\n${contextText}\n\nBriefly interpret fitness vs fatigue vs form, flag any risk of overreaching if numbers suggest it, and suggest 3 concrete actions for the next 7 days (volume, intensity, rest). Keep under ~250 words.`
+                : `Use this context:\n\n${contextText}\n\nGive training insights and next-week suggestions as above.`;
+            const messages = [
+                { role: 'system', content: AI_SYSTEM_PROMPT },
+                { role: 'user', content: userPrompt }
+            ];
+            setAiStatus(isAuto ? 'Generating insight…' : 'Thinking…');
+            try {
+                const reply = await callAiChatCompletions(messages);
+                pushAiMessage('assistant', reply);
+            } catch (e) {
+                pushAiMessage('assistant', 'Error: ' + e.message);
+                setAiStatus(e.message, true);
+                return;
+            }
+            setAiStatus('');
+        }
+
+        async function sendAiUserMessage() {
+            const input = document.getElementById('aiUserInput');
+            const text = (input && input.value || '').trim();
+            if (!text) return;
+            const ctx = (document.getElementById('aiContextPreview') && document.getElementById('aiContextPreview').value) || '';
+            input.value = '';
+            pushAiMessage('user', text);
+            setAiStatus('Thinking…');
+            const systemWithCtx = ctx
+                ? AI_SYSTEM_PROMPT + '\n\nTraining context (current dashboard):\n' + ctx
+                : AI_SYSTEM_PROMPT;
+            const messages = [{ role: 'system', content: systemWithCtx }];
+            aiChatMessages.forEach(m => {
+                if (m.role === 'user' || m.role === 'assistant') messages.push({ role: m.role, content: m.content });
+            });
+            try {
+                const reply = await callAiChatCompletions(messages);
+                pushAiMessage('assistant', reply);
+                setAiStatus('');
+            } catch (e) {
+                pushAiMessage('assistant', 'Error: ' + e.message);
+                setAiStatus(e.message, true);
+            }
+        }
+
+        function refreshAiContextTextarea() {
+            const ta = document.getElementById('aiContextPreview');
+            if (!ta) return;
+            ta.value = buildTrainingContextSnapshot(lastActivitiesForMetrics, lastMetricsReferenceDate);
+        }
+
+        function getNewestSessionFingerprint() {
+            if (!allActivities.length) return null;
+            const sorted = [...allActivities].sort((a, b) => new Date(b.properties.date) - new Date(a.properties.date));
+            const n = sorted[0];
+            return `${n.properties.id}|${n.properties.date}`;
+        }
+
+        function checkNewSessionForAi() {
+            if (!allActivities.length) return;
+            refreshAiContextTextarea();
+            const fp = getNewestSessionFingerprint();
+            if (!fp) return;
+            const stored = sessionStorage.getItem('intervals_ai_newest_fp');
+            const isNewLatestSession = (stored !== fp);
+            sessionStorage.setItem('intervals_ai_newest_fp', fp);
+            if (!isNewLatestSession) return;
+            const auto = document.getElementById('aiAutoOnNewSession');
+            if (auto && auto.checked) {
+                const ctx = document.getElementById('aiContextPreview').value;
+                pushAiMessage('system-note', 'Latest session changed — generating insight.');
+                runAiSessionInsight(ctx, true);
+            }
+        }
+
+        // Map intervals.icu activity to our format. TSS = icu_training_load (intervals.icu's load calculation)
+        function mapIntervalsActivityToOurFormat(act) {
+            const startDate = act.start_date_local || act.start_date || act.date;
+            const dateObj = new Date(startDate);
+            const sport = (act.type || '').toLowerCase();
+            
+            // Use icu_training_load as TSS - same calculation intervals.icu uses
+            const load = act.icu_training_load != null ? Math.round(act.icu_training_load) : 0;
+            
+            return {
+                type: 'Feature',
+                properties: {
+                    id: act.id,
+                    name: act.name || 'Activity',
+                    date: dateObj.toISOString().split('T')[0],
+                    type: act.type || 'Unknown',
+                    tss: load,
+                    moving_time: act.moving_time || 0,
+                    distance: act.distance || 0,
+                    average_speed: act.average_speed || (act.distance && act.moving_time ? act.distance / act.moving_time : 0),
+                    average_heartrate: act.average_heartrate,
+                    average_watts: act.average_watts || act.icu_weighted_avg_watts,
+                    weighted_average_watts: act.icu_weighted_avg_watts || act.average_watts,
+                    year: dateObj.getFullYear(),
+                    month: dateObj.getMonth() + 1,
+                    is_race: act.is_race || false,
+                    workout_type: act.workout_type
+                }
+            };
+        }
+
+        // Activity Filter
+        function filterActivities(filterType) {
+            currentFilter = filterType;
+            document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const btn = document.querySelector(`[data-filter="${filterType}"]`);
+            if (btn) btn.classList.add('active');
+            applyAllFilters();
+        }
+
+        function applyAllFilters() {
+            let filteredActivities = allActivities;
+
+            if (currentRaceFilter) {
+                const selectedRace = allActivities.find(activity => activity.properties.id == currentRaceFilter);
+                if (selectedRace) {
+                    const raceDate = new Date(selectedRace.properties.date);
+                    const dayBeforeRace = new Date(raceDate);
+                    dayBeforeRace.setDate(dayBeforeRace.getDate() - 1);
+                    filteredActivities = allActivities.filter(activity => {
+                        const activityDate = new Date(activity.properties.date);
+                        return activityDate <= dayBeforeRace;
+                    });
+                }
+            }
+
+            if (currentFilter === 'run') {
+                filteredActivities = filteredActivities.filter(f => {
+                    const sport = (f.properties.type || '').toLowerCase();
+                    return sport.includes('run');
+                });
+            } else if (currentFilter === 'ride') {
+                filteredActivities = filteredActivities.filter(f => {
+                    const sport = (f.properties.type || '').toLowerCase();
+                    return sport.includes('ride') || sport.includes('cycle') || sport.includes('bike');
+                });
+            }
+
+            if (currentRaceFilter) {
+                const selectedRace = allActivities.find(activity => activity.properties.id == currentRaceFilter);
+                if (selectedRace) {
+                    const raceDate = new Date(selectedRace.properties.date);
+                    const dayBeforeRace = new Date(raceDate);
+                    dayBeforeRace.setDate(dayBeforeRace.getDate() - 1);
+                    updateAllMetrics(filteredActivities, dayBeforeRace);
+                }
+            } else {
+                updateAllMetrics(filteredActivities);
+            }
+        }
+
+        // Exponential fitness formula: value = prev + alpha * (load - prev)
+        const CTL_TAU = 42;
+        const ATL_TAU = 7;
+        const CTL_ALPHA = 1 / CTL_TAU;
+        const ATL_ALPHA = 1 / ATL_TAU;
+
+        function updateFitness(prevFitness, trainingLoad, alpha) {
+            return prevFitness + alpha * (trainingLoad - prevFitness);
+        }
+
+        // Build map of date string -> daily TSS (sum of activity loads for that day)
+        function buildDailyTSSMap(activities, filterSport = null) {
+            const map = {};
+            activities.forEach(f => {
+                const p = f.properties;
+                const sport = (p.type || '').toLowerCase();
+                if (filterSport && sport.indexOf(filterSport) < 0) return;
+                const date = p.date;
+                if (!map[date]) map[date] = 0;
+                map[date] += p.tss || 0;
+            });
+            return map;
+        }
+
+        // Compute CTL, ATL, Form using exponential formula. Returns { ctl, atl, form, byDate }
+        function computeExponentialFitness(activities, endDate, filterSport = null) {
+            const dailyTSS = buildDailyTSSMap(activities, filterSport);
+            const startDate = new Date(endDate);
+            startDate.setDate(startDate.getDate() - 500);
+
+            let ctl = 0, atl = 0;
+            const byDate = {};
+
+            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                const dateStr = d.toISOString().split('T')[0];
+                const load = dailyTSS[dateStr] || 0;
+                ctl = updateFitness(ctl, load, CTL_ALPHA);
+                atl = updateFitness(atl, load, ATL_ALPHA);
+                byDate[dateStr] = { ctl, atl, form: ctl - atl };
+            }
+            return { ctl, atl, form: ctl - atl, byDate };
+        }
+
+        function updateAllMetrics(activities, referenceDate = null) {
+            lastActivitiesForMetrics = activities;
+            lastMetricsReferenceDate = referenceDate || new Date();
+            const calcDate = lastMetricsReferenceDate;
+
+            const fitnessAll = computeExponentialFitness(activities, calcDate);
+            const yesterday = new Date(calcDate);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            const yesterdayData = fitnessAll.byDate[yesterdayStr] || { ctl: fitnessAll.ctl, atl: fitnessAll.atl, form: fitnessAll.form };
+
+            const currentCTL = Math.round(fitnessAll.ctl);
+            const fatigue = Math.round(fitnessAll.atl);
+            const form = Math.round(yesterdayData.form);
+            
+            document.getElementById('fitness-value').textContent = currentCTL;
+            document.getElementById('fatigue-value').textContent = fatigue;
+            document.getElementById('form-value').textContent = form;
+            
+            const periods = [7, 28, 90, 365];
+            periods.forEach(days => {
+                const ctlData = computeDailyCTL(activities, days, calcDate);
+                createChart(`chart${days}days`, ctlData, days);
+                const firstValue = ctlData[0] || 0;
+                const lastValue = ctlData[ctlData.length - 1] || 0;
+                const rampRate = Math.round(lastValue - firstValue);
+                document.getElementById(`ramp${days}days`).textContent = rampRate >= 0 ? `+${rampRate}` : rampRate;
+            });
+            
+            createPredictionChart(activities, calcDate);
+            
+            const ctlAll = Math.round(computeExponentialFitness(activities, calcDate).ctl);
+            const ctlRun = Math.round(computeExponentialFitness(activities, calcDate, "run").ctl);
+            const ctlRide = Math.round(computeExponentialFitness(activities, calcDate, "ride").ctl);
+            document.getElementById('ctl-all').textContent = "All: " + ctlAll;
+            document.getElementById('ctl-run').textContent = "Running: " + ctlRun;
+            document.getElementById('ctl-ride').textContent = "Cycling: " + ctlRide;
+            
+            calculateSummaryStats(activities, calcDate);
+            updateActivityLog(activities, calcDate);
+            refreshAiContextTextarea();
+        }
+
+        // Compute daily CTL values for chart (exponential formula)
+        function computeDailyCTL(activities, days, referenceDate = null) {
+            const calcDate = referenceDate || new Date();
+            const fitness = computeExponentialFitness(activities, calcDate);
+            const dailyCTL = [];
+            for (let i = days - 1; i >= 0; i--) {
+                const targetDate = new Date(calcDate);
+                targetDate.setDate(targetDate.getDate() - i);
+                const dateStr = targetDate.toISOString().split('T')[0];
+                const val = fitness.byDate[dateStr];
+                dailyCTL.push(val ? val.ctl : 0);
+            }
+            return dailyCTL;
+        }
+
+        function createChart(canvasId, data, days) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (charts[canvasId]) charts[canvasId].destroy();
+            const labels = Array(days).fill().map((_, i) => '');
+            
+            charts[canvasId] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        borderColor: '#2196f3',
+                        backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { display: false, beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function createPredictionChart(activities, referenceDate = null) {
+            const canvas = document.getElementById('predictionChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (charts['predictionChart']) charts['predictionChart'].destroy();
+
+            const calcDate = referenceDate || new Date();
+            const today = new Date(calcDate);
+            
+            let last7DaysTSS = 0;
+            activities.forEach(f => {
+                const activityDate = new Date(f.properties.date);
+                const dayDiff = Math.floor((today - activityDate) / (24 * 3600 * 1000));
+                if (dayDiff >= 0 && dayDiff < 7) {
+                    last7DaysTSS += f.properties.tss || 0;
+                }
+            });
+            const avg7DayLoad = last7DaysTSS / 7;
+            document.getElementById('avg7DayTSS').textContent = Math.round(avg7DayLoad);
+
+            const fitness = computeExponentialFitness(activities, today);
+            const historicalCTL = [];
+            const labels = [];
+            
+            for (let i = 89; i >= 0; i--) {
+                const targetDate = new Date(today);
+                targetDate.setDate(targetDate.getDate() - i);
+                const dateStr = targetDate.toISOString().split('T')[0];
+                const val = fitness.byDate[dateStr];
+                historicalCTL.push(val ? val.ctl : 0);
+                labels.push(targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+            }
+            
+            const predictionCTL = [];
+            const predictionLabels = [];
+            let ctl = fitness.ctl;
+            
+            for (let i = 1; i <= 30; i++) {
+                const futureDate = new Date(today);
+                futureDate.setDate(futureDate.getDate() + i);
+                ctl = updateFitness(ctl, avg7DayLoad, CTL_ALPHA);
+                predictionCTL.push(ctl);
+                predictionLabels.push(futureDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+            }
+            
+            const allLabels = [...labels, ...predictionLabels];
+            
+            charts['predictionChart'] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: allLabels,
+                    datasets: [
+                        {
+                            label: 'Historical CTL (τ=42)',
+                            data: [...historicalCTL, ...Array(30).fill(null)],
+                            borderColor: '#2196f3',
+                            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                            fill: false,
+                            tension: 0.1,
+                            pointRadius: 1,
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Predicted CTL',
+                            data: [...Array(90).fill(null), ...predictionCTL],
+                            borderColor: '#ff9800',
+                            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                            borderDash: [5, 5],
+                            fill: false,
+                            tension: 0.1,
+                            pointRadius: 2,
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: true, position: 'top' } },
+                    scales: {
+                        x: { display: true, title: { display: true, text: 'Date' }, ticks: { maxTicksLimit: 10 } },
+                        y: { display: true, title: { display: true, text: 'CTL (exponential τ=42)' }, beginAtZero: true }
+                    },
+                    interaction: { intersect: false, mode: 'index' }
+                }
+            });
+        }
+
+        function calculateSummaryStats(activities, referenceDate = null) {
+            const calcDate = referenceDate || new Date();
+            const last42Days = activities.filter(f => {
+                const activityDate = new Date(f.properties.date);
+                const dayDiff = Math.floor((calcDate - activityDate) / (24 * 3600 * 1000));
+                return dayDiff >= 0 && dayDiff < 42;
+            });
+            const last7Days = activities.filter(f => {
+                const activityDate = new Date(f.properties.date);
+                const dayDiff = Math.floor((calcDate - activityDate) / (24 * 3600 * 1000));
+                return dayDiff >= 0 && dayDiff < 7;
+            });
+            const totalActivities = last42Days.length;
+            const totalTSS = last42Days.reduce((sum, f) => sum + (f.properties.tss || 0), 0);
+            const avgTSSPerDay = Math.round(totalTSS / 42);
+            const weeklyTSS = last7Days.reduce((sum, f) => sum + (f.properties.tss || 0), 0);
+
+            document.getElementById('totalActivities').textContent = totalActivities;
+            document.getElementById('totalTSS').textContent = totalTSS;
+            document.getElementById('avgTSSPerDay').textContent = avgTSSPerDay;
+            document.getElementById('weeklyTSS').textContent = weeklyTSS;
+        }
+
+        function formatDuration(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+        }
+
+        function formatDistance(meters) {
+            if (!meters) return '';
+            return `${(meters / 1000).toFixed(1)}km`;
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' });
+        }
+
+        function populateRaceDropdown(activities) {
+            const dropdown = document.getElementById('raceDropdown');
+            const races = [];
+            activities.forEach(activity => {
+                const p = activity.properties;
+                const sportType = (p.type || '').toLowerCase();
+                const isRace = (p.is_race === true) ||
+                    (p.workout_type === 1 && sportType.includes('run')) ||
+                    (p.workout_type === 11 && (sportType.includes('ride') || sportType.includes('cycle') || sportType.includes('bike')));
+                if (isRace) {
+                    races.push({ id: p.id, name: p.name, date: p.date, type: p.type, distance: p.distance });
+                }
+            });
+            races.sort((a, b) => new Date(b.date) - new Date(a.date));
+            dropdown.innerHTML = '<option value="">Select a race to view day before data...</option>';
+            races.forEach(race => {
+                const option = document.createElement('option');
+                option.value = race.id;
+                const raceDate = new Date(race.date);
+                const formattedDate = raceDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' });
+                const distance = race.distance ? `${(race.distance / 1000).toFixed(1)}km ` : '';
+                option.textContent = `${formattedDate} - ${distance}${race.name}`;
+                dropdown.appendChild(option);
+            });
+        }
+
+        function filterByRace(raceId) {
+            currentRaceFilter = raceId;
+            if (!raceId) {
+                document.getElementById('raceInfo').style.display = 'none';
+                applyAllFilters();
+                return;
+            }
+            const selectedRace = allActivities.find(activity => activity.properties.id == raceId);
+            if (!selectedRace) return;
+
+            const raceDate = new Date(selectedRace.properties.date);
+            const dayBeforeRace = new Date(raceDate);
+            dayBeforeRace.setDate(dayBeforeRace.getDate() - 1);
+
+            const raceInfo = document.getElementById('raceInfo');
+            raceInfo.innerHTML = `
+                <strong>Race:</strong> ${selectedRace.properties.name}<br>
+                <strong>Race Date:</strong> ${raceDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', weekday: 'long' })}<br>
+                <strong>Showing data up to:</strong> ${dayBeforeRace.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', weekday: 'long' })}<br>
+                <em>All metrics now show fitness state before the race</em>
+            `;
+            raceInfo.style.display = 'block';
+            applyAllFilters();
+        }
+
+        function updateActivityLog(activities, referenceDate = null) {
+            const logContainer = document.getElementById('activityLog');
+            const calcDate = referenceDate || new Date();
+            const recentActivities = activities
+                .filter(f => {
+                    const activityDate = new Date(f.properties.date);
+                    const dayDiff = Math.floor((calcDate - activityDate) / (24 * 3600 * 1000));
+                    return dayDiff >= 0 && dayDiff < 42;
+                })
+                .sort((a, b) => new Date(b.properties.date) - new Date(a.properties.date));
+
+            if (recentActivities.length === 0) {
+                logContainer.innerHTML = '<div class="activity-item">No activities found in the last 42 days.</div>';
+            } else {
+                logContainer.innerHTML = recentActivities.map(f => {
+                    const p = f.properties;
+                    const sport = (p.type || 'Unknown').charAt(0).toUpperCase() + (p.type || 'unknown').slice(1);
+                    const duration = formatDuration(p.moving_time || 0);
+                    const distance = formatDistance(p.distance);
+                    const avgSpeed = p.average_speed ? `${(p.average_speed * 3.6).toFixed(1)} km/h` : '';
+                    const avgHR = p.average_heartrate ? `${Math.round(p.average_heartrate)} bpm` : '';
+                    const avgPower = p.average_watts ? `${Math.round(p.average_watts)}W` : '';
+                    let statsText = duration;
+                    if (distance) statsText += ` • ${distance}`;
+                    if (avgSpeed) statsText += ` • ${avgSpeed}`;
+                    if (avgHR) statsText += ` • ${avgHR}`;
+                    if (avgPower) statsText += ` • ${avgPower}`;
+                    return `
+                        <div class="activity-item">
+                            <div class="activity-details">
+                                <div class="activity-date">${formatDate(p.date)}</div>
+                                <div class="activity-type">${sport}</div>
+                                <div class="activity-stats">${statsText}</div>
+                            </div>
+                            <div class="tss-value">${p.tss || 0}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            logContainer.style.display = 'block';
+        }
+
+        function updateYoYActivityType(type) {
+            yoyActivityType = type;
+            document.querySelectorAll('[data-yoy-filter]').forEach(btn => btn.classList.remove('active'));
+            const btn = document.querySelector(`[data-yoy-filter="${type}"]`);
+            if (btn) btn.classList.add('active');
+            createYoYChart();
+        }
+        
+        function updateYoYMetric(metric) {
+            yoyMetric = metric;
+            document.querySelectorAll('[data-yoy-metric]').forEach(btn => btn.classList.remove('active'));
+            const btn = document.querySelector(`[data-yoy-metric="${metric}"]`);
+            if (btn) btn.classList.add('active');
+            createYoYChart();
+        }
+        
+        function updateYoYYear() {
+            const select = document.getElementById('yoyYearSelect');
+            yoyCompareYear = parseInt(select.value);
+            document.getElementById('yoyCompareYearLabel').textContent = yoyCompareYear;
+            createYoYChart();
+        }
+        
+        function populateYoYYearDropdown(activities) {
+            const currentYear = new Date().getFullYear();
+            const years = new Set();
+            activities.forEach(activity => {
+                const year = activity.properties.year;
+                if (year && year !== currentYear) years.add(year);
+            });
+            const sortedYears = Array.from(years).sort((a, b) => b - a);
+            const select = document.getElementById('yoyYearSelect');
+            select.innerHTML = '';
+            sortedYears.forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                select.appendChild(option);
+            });
+            if (sortedYears.length > 0) {
+                yoyCompareYear = sortedYears[0];
+                select.value = yoyCompareYear;
+                document.getElementById('yoyCompareYearLabel').textContent = yoyCompareYear;
+            }
+            document.getElementById('yoyCurrentYearLabel').textContent = currentYear;
+        }
+        
+        function createYoYChart() {
+            if (!allActivities.length || !yoyCompareYear) return;
+            const canvas = document.getElementById('yoyChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (charts['yoyChart']) charts['yoyChart'].destroy();
+
+            const currentYear = new Date().getFullYear();
+            const filteredActivities = allActivities.filter(activity => {
+                const sport = (activity.properties.type || '').toLowerCase();
+                if (yoyActivityType === 'run') return sport.includes('run');
+                if (yoyActivityType === 'ride') return sport.includes('ride') || sport.includes('cycle') || sport.includes('bike');
+                return false;
+            });
+            
+            const currentYearData = Array(12).fill(0);
+            const compareYearData = Array(12).fill(0);
+            filteredActivities.forEach(activity => {
+                const props = activity.properties;
+                const year = props.year;
+                const month = props.month - 1;
+                if (year === currentYear && month >= 0 && month < 12) {
+                    if (yoyMetric === 'distance') currentYearData[month] += (props.distance || 0) / 1000;
+                    else if (yoyMetric === 'duration') currentYearData[month] += (props.moving_time || 0) / 3600;
+                } else if (year === yoyCompareYear && month >= 0 && month < 12) {
+                    if (yoyMetric === 'distance') compareYearData[month] += (props.distance || 0) / 1000;
+                    else if (yoyMetric === 'duration') compareYearData[month] += (props.moving_time || 0) / 3600;
+                }
+            });
+            const currentYearRounded = currentYearData.map(v => Math.round(v * 10) / 10);
+            const compareYearRounded = compareYearData.map(v => Math.round(v * 10) / 10);
+            const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const yAxisLabel = yoyMetric === 'distance' ? 'Distance (km)' : 'Duration (hours)';
+            
+            charts['yoyChart'] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: monthLabels,
+                    datasets: [
+                        { label: `${currentYear}`, data: currentYearRounded, backgroundColor: 'rgba(33, 150, 243, 0.6)', borderColor: '#2196f3', borderWidth: 2 },
+                        { label: `${yoyCompareYear}`, data: compareYearRounded, backgroundColor: 'rgba(255, 152, 0, 0.6)', borderColor: '#ff9800', borderWidth: 2 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: true, position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    const value = context.parsed.y;
+                                    const unit = yoyMetric === 'distance' ? 'km' : 'hours';
+                                    return `${label}: ${value} ${unit}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { display: true, title: { display: true, text: 'Month' } },
+                        y: { display: true, title: { display: true, text: yAxisLabel }, beginAtZero: true }
+                    }
+                }
+            });
+        }
+        
+        function refreshYoYFromActivities() {
+            if (!allActivities.length) return;
+            populateYoYYearDropdown(allActivities);
+            createYoYChart();
+        }
+
+        async function loadActivitiesData() {
+            const oldest = new Date();
+            oldest.setDate(oldest.getDate() - INTERVALS_FETCH_LOOKBACK_DAYS);
+            const oldestStr = oldest.toISOString().split('T')[0];
+            const newestStr = new Date().toISOString().split('T')[0];
+
+            document.getElementById('loadingMessage').style.display = 'block';
+            document.getElementById('loadingMessage').textContent = 'Loading activities…';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('activityLog').style.display = 'none';
+
+            let activities = null;
+            let errLive = null;
+            try {
+                const qs = `oldest=${encodeURIComponent(oldestStr)}&newest=${encodeURIComponent(newestStr)}`;
+                const r = await fetch(`${API_BASE}/intervals/activities?${qs}`, {
+                    method: 'GET',
+                    headers: apiAuthHeaders()
+                });
+                const t = await r.text();
+                let json;
+                try {
+                    json = JSON.parse(t);
+                } catch {
+                    throw new Error(`HTTP ${r.status}: ${t || r.statusText}`);
+                }
+                if (!r.ok) {
+                    const errMsg = typeof json.error === 'string' ? json.error : (t || r.statusText);
+                    throw new Error(errMsg);
+                }
+                activities = json;
+            } catch (e) {
+                errLive = e;
+                console.warn('Intervals /api proxy failed:', e);
+            }
+
+            if (!activities) {
+                document.getElementById('loadingMessage').textContent = 'No training data loaded.';
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('errorMessage').textContent =
+                    (errLive ? errLive.message : 'Unable to load training data from the API.');
+                refreshAiContextTextarea();
+                return;
+            }
+
+            allActivities = (activities || []).map(mapIntervalsActivityToOurFormat);
+            applyAllFilters();
+            document.getElementById('lastUpdated').textContent =
+                `Last updated: ${new Date().toLocaleTimeString()} (via Vercel API)`;
+            populateRaceDropdown(allActivities);
+            refreshYoYFromActivities();
+            checkNewSessionForAi();
+            document.getElementById('loadingMessage').style.display = 'none';
+        }
+
+        (function wireAiPanel() {
+            const btnCtx = document.getElementById('aiBtnRefreshContext');
+            const btnClr = document.getElementById('aiBtnClearChat');
+            const btnSend = document.getElementById('aiBtnSend');
+            const inp = document.getElementById('aiUserInput');
+            if (btnCtx) btnCtx.addEventListener('click', () => {
+                refreshAiContextTextarea();
+                setAiStatus('Context rebuilt from current dashboard data.');
+            });
+            if (btnClr) btnClr.addEventListener('click', () => {
+                aiChatMessages = [];
+                renderAiChat();
+                setAiStatus('Chat cleared.');
+            });
+            if (btnSend) btnSend.addEventListener('click', () => sendAiUserMessage());
+            if (inp) inp.addEventListener('keydown', e => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendAiUserMessage();
+                }
+            });
+        })();
+
+        (async function boot() {
+            await loadActivitiesData();
+            setInterval(() => loadActivitiesData(), 5 * 60 * 1000);
+        })();
+    </script>
+</body>
+</html>

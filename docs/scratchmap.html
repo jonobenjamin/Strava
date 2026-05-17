@@ -1,0 +1,554 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Strava Scratch Map</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏃</text></svg>">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body { 
+      height: 100%; 
+      margin: 0; 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      overflow: hidden; 
+    }
+    
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    
+    #map { 
+      flex: 1;
+      width: 100%; 
+      min-height: 300px;
+    }
+
+    .map-controls {
+      background: white;
+      padding: 12px;
+      border-top: 1px solid #e0e0e0;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+      max-height: 45vh;
+      overflow-y: auto;
+    }
+    
+    .controls-header {
+      margin: 0 0 12px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .legend-item { 
+      display: flex; 
+      align-items: center; 
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    
+    .legend-color { 
+      width: 16px; 
+      height: 16px; 
+      margin-right: 6px; 
+      border: 1px solid #ccc;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .stats { 
+      font-size: 13px; 
+      margin: 8px 0;
+      color: #666;
+      font-weight: 500;
+    }
+
+    .visited-countries-inline {
+      display: none;
+      margin-left: 8px;
+      flex: 1;
+    }
+
+    .visited-countries-inline .country-list {
+      font-size: 10px;
+      line-height: 1.3;
+      color: #666;
+      max-height: 60px;
+      overflow-y: auto;
+      background: rgba(255,255,255,0.8);
+      padding: 4px;
+      border-radius: 3px;
+      border: 1px solid #e0e0e0;
+    }
+
+    /* Mobile: show visited countries inline with Not Visited */
+    @media (max-width: 768px) {
+      .not-visited-with-countries {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+
+      .visited-countries-inline {
+        margin-left: 0;
+        margin-top: 4px;
+        width: 100%;
+      }
+
+      .visited-countries-inline .country-list {
+        max-height: 80px;
+        font-size: 11px;
+      }
+    }
+
+    /* Legacy styles for any remaining visited-countries elements */
+    .visited-countries {
+      margin-top: 8px;
+      border-top: 1px solid #e0e0e0;
+      padding-top: 8px;
+    }
+
+    .visited-countries h4 {
+      margin: 0 0 6px 0;
+      font-size: 13px;
+      color: #555;
+      font-weight: 600;
+    }
+
+    .country-list {
+      font-size: 11px;
+      line-height: 1.4;
+      color: #666;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    
+    .loading {
+      position: absolute; 
+      top: 50%; 
+      left: 50%; 
+      transform: translate(-50%, -50%);
+      background: white; 
+      padding: 20px; 
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15); 
+      z-index: 1001;
+      font-size: 14px;
+    }
+    
+    .error {
+      background: #fee; 
+      border: 1px solid #fcc; 
+      color: #c00;
+      padding: 8px; 
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      .legend {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+      }
+      
+      .legend-item {
+        font-size: 11px;
+      }
+      
+      .legend-color {
+        width: 14px;
+        height: 14px;
+      }
+      
+      .map-controls {
+        max-height: 40vh;
+      }
+      
+      .country-list {
+        max-height: 120px;
+      }
+    }
+
+    /* When embedded as a tile */
+    .tile-mode {
+      height: 100%;
+    }
+    
+    .tile-mode .container {
+      height: 100%;
+    }
+    
+    .tile-mode .map-controls {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: min(260px, 38vw);
+      max-height: calc(100% - 24px);
+      border-radius: 4px;
+      z-index: 1000;
+      padding: 6px;
+      font-size: 10px;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+    
+    .tile-mode .controls-header {
+      font-size: 12px;
+      margin: 0 0 6px 0;
+      line-height: 1.2;
+    }
+    
+    .tile-mode .legend {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 3px;
+      margin-bottom: 6px;
+    }
+    
+    .tile-mode .legend-item {
+      font-size: 9px;
+      line-height: 1.1;
+    }
+    
+    .tile-mode .legend-color {
+      width: 10px;
+      height: 10px;
+      margin-right: 3px;
+    }
+    
+    .tile-mode .stats {
+      font-size: 9px;
+      margin: 4px 0;
+      line-height: 1.1;
+    }
+    
+    .tile-mode .visited-countries {
+      margin-top: 4px;
+      padding-top: 4px;
+    }
+    
+    .tile-mode .visited-countries h4 {
+      font-size: 10px;
+      margin-bottom: 3px;
+    }
+    
+    .tile-mode .country-list {
+      font-size: 8px;
+      line-height: 1.2;
+      max-height: 80px;
+    }
+    
+    @media (max-width: 600px) {
+      .tile-mode .map-controls {
+        position: relative;
+        top: auto;
+        right: auto;
+        width: 100%;
+        border-radius: 0;
+        border-top: 1px solid #e0e0e0;
+        max-height: 35vh;
+        padding: 8px;
+      }
+      
+      .tile-mode .controls-header {
+        font-size: 13px;
+      }
+      
+      .tile-mode .legend-item,
+      .tile-mode .stats {
+        font-size: 10px;
+      }
+      
+      .tile-mode .visited-countries h4 {
+        font-size: 11px;
+      }
+      
+      .tile-mode .country-list {
+        font-size: 9px;
+        max-height: 100px;
+      }
+    }
+  </style>
+</head>
+<body class="dashboard">
+  <div class="container">
+    <div id="loading" class="loading">Loading map data...</div>
+    <div id="map"></div>
+
+    <div class="map-controls">
+      <h3 class="controls-header">Strava Scratch Map</h3>
+      
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-color" style="background:rebeccapurple;"></div>
+          Visited
+        </div>
+        <div class="legend-item not-visited-with-countries">
+          <div class="legend-color" style="background:#000;"></div>
+          Not Visited
+          <div class="visited-countries-inline" id="visited-countries" style="display:none;">
+            <div class="country-list" id="country-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats" id="stats">Loading…</div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+  <script>
+    // Detect if running in tile mode
+    function detectTileMode() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isTile = urlParams.get('tile') === 'true';
+      const isSmallContainer = window.innerWidth < 800 || window.innerHeight < 600;
+      return isTile || isSmallContainer;
+    }
+
+    // Apply tile mode if detected
+    if (detectTileMode()) {
+      document.body.classList.add('tile-mode');
+      document.body.classList.remove('dashboard');
+    }
+
+    const map = L.map('map').setView([0, 0], 2);
+    L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}{r}.png', {
+      attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> — Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      subdomains: 'abcd',
+      minZoom: 0,
+      maxZoom: 20
+    }).addTo(map);
+
+    function hideLoading() { 
+      document.getElementById('loading').style.display = 'none'; 
+    }
+    
+    function showError(msg) { 
+      document.getElementById('stats').innerHTML = `<div class="error">${msg}</div>`; 
+      hideLoading();
+    }
+
+    async function loadGeoJSON(url) {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`Failed to load ${url}`);
+      return await resp.json();
+    }
+
+    async function loadCountriesVisited() {
+      try {
+        const resp = await fetch("countries_visited.csv");
+        if (!resp.ok) return [];
+        const text = await resp.text();
+        return text.split(/\r?\n/)
+          .map(line => line.trim())
+          .filter(line => line.length > 0 && !line.startsWith('#'));
+      } catch (e) {
+        console.log("❌ Error loading CSV:", e);
+        return [];
+      }
+    }
+
+    function normalizeCountryName(name) {
+      return name.toLowerCase()
+        .replace(/^the\s+/i, '')  
+        .replace(/[^\w\s]/g, '')  
+        .replace(/\s+/g, ' ')     
+        .trim();
+    }
+
+    function createCountryAliases() {
+      return {
+        'usa': ['united states of america', 'united states', 'america'],
+        'uk': ['united kingdom', 'great britain', 'britain'],
+        'england': ['united kingdom', 'great britain'],
+        'russia': ['russian federation'],
+        'south korea': ['korea'],
+        'north korea': ['korea'],
+        'czech republic': ['czechia'],
+        'myanmar': ['burma'],
+        'iran': ['islamic republic of iran'],
+        'syria': ['syrian arab republic'],
+        'laos': ['lao'],
+        'macedonia': ['north macedonia'],
+        'congo': ['democratic republic of the congo', 'republic of the congo'],
+        'ivory coast': ['cote divoire'],
+        'bosnia': ['bosnia and herzegovina']
+      };
+    }
+
+    // Create sample data for demo
+    function createSampleData() {
+      const countries = {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: { NAME: "Botswana" },
+            geometry: {
+              type: "Polygon",
+              coordinates: [[[20.0, -18.0], [29.0, -18.0], [29.0, -25.0], [20.0, -25.0], [20.0, -18.0]]]
+            }
+          },
+          {
+            type: "Feature",
+            properties: { NAME: "South Africa" },
+            geometry: {
+              type: "Polygon",
+              coordinates: [[[16.0, -22.0], [33.0, -22.0], [33.0, -35.0], [16.0, -35.0], [16.0, -22.0]]]
+            }
+          },
+          {
+            type: "Feature",
+            properties: { NAME: "Namibia" },
+            geometry: {
+              type: "Polygon",
+              coordinates: [[[11.0, -17.0], [25.0, -17.0], [25.0, -29.0], [11.0, -29.0], [11.0, -17.0]]]
+            }
+          }
+        ]
+      };
+      
+      const activities = {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: { name: "Morning Run", type: "run" },
+            geometry: { type: "LineString", coordinates: [[25.9, -24.6], [26.0, -24.7]] }
+          },
+          {
+            type: "Feature", 
+            properties: { name: "City Bike Ride", type: "ride" },
+            geometry: { type: "LineString", coordinates: [[25.8, -24.5], [25.9, -24.6]] }
+          }
+        ]
+      };
+      
+      return { countries, activities, travel: { type: "FeatureCollection", features: [] } };
+    }
+
+    async function initializeMap() {
+      try {
+        let countries, activities, travel, visitedCountriesFromFile;
+        
+        try {
+          countries = await loadGeoJSON("data/countries.geojson");
+          activities = await loadGeoJSON("data/activities.geojson");
+          travel = await loadGeoJSON("data/travel.geojson");
+          visitedCountriesFromFile = await loadCountriesVisited();
+        } catch (e) {
+          // Use sample data if files don't exist
+          const sampleData = createSampleData();
+          countries = sampleData.countries;
+          activities = sampleData.activities;
+          travel = sampleData.travel;
+          visitedCountriesFromFile = ['Botswana', 'South Africa']; // Sample visited countries
+        }
+
+        const filterActivity = (feature) => {
+          const props = feature.properties || {};
+          const type = (props.type || props.activity_type || '').toLowerCase();
+          const name = (props.name || '').toLowerCase();
+          if (name.includes('virtual') || type.includes('virtual')) return false;
+          if (type.includes('flight')) return false;
+          if (name.includes('flight')) return false;
+          // Specifically exclude activities with names ending in "(Flight)" variations
+          if (name.endsWith('(flight)') || name.endsWith('(Flight)') || name.endsWith('(FLIGHT)')) return false;
+          return true;
+        };
+
+        const filteredActivities = activities.features.filter(filterActivity);
+        const filteredTravel = travel.features.filter(filterActivity);
+        const allFeatures = [...filteredActivities, ...filteredTravel];
+
+        const points = [];
+        allFeatures.forEach(a => {
+          if (a.geometry && a.geometry.type === "LineString") {
+            points.push(turf.point(a.geometry.coordinates[0]));
+            const coords = a.geometry.coordinates;
+            points.push(turf.point(coords[Math.floor(coords.length / 2)]));
+          } else if (a.geometry && a.geometry.type === "Point") {
+            points.push(turf.point(a.geometry.coordinates));
+          }
+        });
+
+        let visitedCount = 0;
+        const visitedCountries = [];
+        const aliases = createCountryAliases();
+
+        countries.features.forEach((country, i) => {
+          const name = country.properties.NAME || country.properties.name || `Country_${i}`;
+          const visitedViaActivity = points.some(pt => turf.booleanPointInPolygon(pt, country));
+          const normalizedCountryName = normalizeCountryName(name);
+          let visitedManually = false;
+
+          for (const visitedName of visitedCountriesFromFile) {
+            const normalizedVisited = normalizeCountryName(visitedName);
+            const visitedAliases = aliases[normalizedVisited] || [];
+            const countryAliases = aliases[normalizedCountryName] || [];
+
+            if (normalizedVisited === normalizedCountryName) { visitedManually = true; break; }
+            if (visitedAliases.some(a => normalizeCountryName(a) === normalizedCountryName)) { visitedManually = true; break; }
+            if (countryAliases.some(a => normalizeCountryName(a) === normalizedVisited)) { visitedManually = true; break; }
+            if (normalizedVisited.length > 4 && normalizedCountryName.includes(normalizedVisited)) { visitedManually = true; break; }
+          }
+
+          const visited = visitedViaActivity || visitedManually;
+          if (visited) { 
+            visitedCount++; 
+            visitedCountries.push(name); 
+          }
+
+          L.geoJSON(country, {
+            style: {
+              color: "#333",
+              weight: 1,
+              fillColor: visited ? "rebeccapurple" : "#000",
+              fillOpacity: visited ? 0.7 : 0.3
+            }
+          }).bindPopup(`<b>${name}</b><br>Status: ${visited ? "Visited ✓" : "Not visited"}`).addTo(map);
+        });
+
+        visitedCountries.sort();
+        document.getElementById('stats').innerHTML = `${visitedCount} of ${countries.features.length} countries visited`;
+
+        if (visitedCountries.length > 0) {
+          document.getElementById('country-list').innerHTML = visitedCountries.join('<br>');
+          document.getElementById('visited-countries').style.display = 'flex';
+        }
+
+        const southWest = L.latLng(-56, -180);
+        const northEast = L.latLng(83, 180);
+        map.setMaxBounds(L.latLngBounds(southWest, northEast));
+        map.fitBounds(L.latLngBounds(southWest, northEast));
+
+      } catch (e) { 
+        console.error(e);
+        showError(e.message); 
+      }
+      hideLoading();
+    }
+
+    // Initialize
+    initializeMap();
+
+    // Handle window resize for responsive behavior
+    window.addEventListener('resize', function() {
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 100);
+    });
+  </script>
+</body>
+</html>

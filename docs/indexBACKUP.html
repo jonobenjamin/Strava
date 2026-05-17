@@ -1,0 +1,182 @@
+<nav style="background:#333; padding:10px;">
+  <a href="index.html" style="color:white; margin-right:20px; text-decoration:none;">Sports Map</a>
+  <a href="scratchmap.html" style="color:white; margin-right:20px; text-decoration:none;">Scratch Map</a>
+  <a href="all_data.html" style="color:white; text-decoration:none;">All Data</a>
+</nav>
+
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Strava Activities Dashboard</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body, #map { height: 100%; margin: 0; }
+    .controls {
+      position: absolute; bottom: 10px; left: 10px;
+      background: white; padding: 8px 10px;
+      z-index: 1000; border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.15);
+      font-family: sans-serif;
+    }
+    .metrics {
+      position: absolute; top: 10px; right: 10px;
+      background: white; padding: 10px 14px;
+      border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.15);
+      font-family: sans-serif;
+    }
+    .controls select { margin-right: 6px; }
+    .metrics h3 { margin: 0 0 6px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="controls">
+    <label>Year <select id="year"></select></label>
+    <label>Month <select id="month"></select></label>
+    <button id="reset">Reset</button>
+  </div>
+  <div class="metrics">
+    <h3>CTL (42d avg TSS)</h3>
+    <div id="ctl-all">All: --</div>
+    <div id="ctl-run">Running: --</div>
+    <div id="ctl-ride">Cycling: --</div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // Africa bounds: [[southWestLat, southWestLng], [northEastLat, northEastLng]]
+    const africaBounds = [[-35.0, -20.0], [38.0, 52.0]];
+
+    // Initialize map restricted to Africa
+    const map = L.map('map', {
+      maxBounds: africaBounds,
+      maxBoundsViscosity: 1.0
+    }).setView([6.0, 25.0], 4);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+    const layerGroup = L.layerGroup().addTo(map);
+    let features = [];
+
+    // Thresholds
+    const thresholds = {
+      running_pace: 4.76,
+      cycling_power: 280,
+      cycling_hr: { Z2:161.5, Z3:173, Z4:183.5, Z5a:192, Z5b:197.5, Z5c:228 }
+    };
+
+    function hr_to_if(hr) {
+      if(!hr) return 0;
+      if(hr >= 155 && hr <= 168) return hr / thresholds.cycling_hr.Z2;
+      if(hr >= 169 && hr <= 177) return hr / thresholds.cycling_hr.Z3;
+      if(hr >= 178 && hr <= 189) return hr / thresholds.cycling_hr.Z4;
+      if(hr >= 190 && hr <= 194) return hr / thresholds.cycling_hr.Z5a;
+      if(hr >= 195 && hr <= 200) return hr / thresholds.cycling_hr.Z5b;
+      if(hr >= 201) return hr / thresholds.cycling_hr.Z5c;
+      return hr / thresholds.cycling_hr.Z4;
+    }
+
+    function pace_to_if(avg_speed) {
+      if(!avg_speed) return 0;
+      return avg_speed / thresholds.running_pace;
+    }
+
+    function computeCTL(list, filterSport=null) {
+      const today = new Date();
+      const cutoff = new Date(today.getTime() - 42*24*3600*1000);
+      const tssList = list.filter(f=>{
+        const d = new Date(f.properties.date);
+        if(d < cutoff) return false;
+        if(filterSport && (f.properties.type||'').toLowerCase().indexOf(filterSport)<0) return false;
+        return true;
+      }).map(f=>f.properties.tss||0);
+      if(!tssList.length) return 0;
+      const sum = tssList.reduce((a,b)=>a+b,0);
+      return Math.round(sum / 42);
+    }
+
+    fetch('data/activities.geojson?_=' + Date.now())
+      .then(r => r.json())
+      .then(geo => {
+        features = geo.features || [];
+
+        features.forEach(f => {
+          const p = f.properties || {};
+          const sport = (p.type || p.sport_type || '').toLowerCase();
+          const duration = p.moving_time || 0;
+          let tss = 0;
+
+          if(sport.includes('run')) {
+            const avg_speed = p.average_speed || (p.distance / duration);
+            const IF = pace_to_if(avg_speed);
+            tss = (duration/3600) * IF * IF * 100;
+          } else if(sport.includes('ride') || sport.includes('cycle') || sport.includes('bike')) {
+            if(p.average_watts) {
+              const IF = p.average_watts / thresholds.cycling_power;
+              tss = (duration/3600) * IF * IF * 100;
+            } else if(p.average_heartrate) {
+              const IF = hr_to_if(p.average_heartrate);
+              tss = (duration/3600) * IF * IF * 100;
+            }
+          }
+          p.tss = Math.round(tss);
+        });
+
+        initFilters(features);
+        draw(features);
+
+        document.getElementById('ctl-all').innerText = "All: " + computeCTL(features);
+        document.getElementById('ctl-run').innerText = "Running: " + computeCTL(features,"run");
+        document.getElementById('ctl-ride').innerText = "Cycling: " + computeCTL(features,"ride");
+      });
+
+    function draw(list) {
+      layerGroup.clearLayers();
+      const gj = L.geoJSON({ type: 'FeatureCollection', features: list }, {
+        style: function(feat) {
+          const sport = (feat.properties.type||'').toLowerCase();
+          if(sport.includes('run')) return { weight: 3, color: 'green' };
+          if(sport.includes('ride') || sport.includes('cycle') || sport.includes('bike')) return { weight: 3, color: 'red' };
+          return { weight: 3, color: 'blue' };
+        },
+        onEachFeature: (feat, layer) => {
+          const p = feat.properties || {};
+          const title = [p.name, p.date].filter(Boolean).join(' — ');
+          layer.bindPopup(`<b>${title}</b><br>${p.type}<br>${(p.distance/1000).toFixed(1)} km<br>TSS: ${p.tss}`);
+        }
+      }).addTo(layerGroup);
+
+      if (list.length) {
+        const bounds = gj.getBounds();
+        if (bounds.isValid()) map.fitBounds(bounds, { maxZoom: 12, padding: [20,20] });
+      }
+    }
+
+    function initFilters(list) {
+      const years = Array.from(new Set(list.map(f => f.properties?.year).filter(Boolean))).sort();
+      const months = [...Array(12).keys()].map(i => i+1);
+      const ySel = document.getElementById('year');
+      const mSel = document.getElementById('month');
+
+      ySel.innerHTML = '<option value="">All</option>' + years.map(y => `<option>${y}</option>`).join('');
+      mSel.innerHTML = '<option value="">All</option>' + months.map(m => `<option>${m}</option>`).join('');
+
+      function apply() {
+        const y = ySel.value; const m = mSel.value;
+        const filtered = features.filter(f => {
+          const p = f.properties || {};
+          if (y && String(p.year) !== y) return false;
+          if (m && String(p.month) !== m) return false;
+          return true;
+        });
+        draw(filtered);
+      }
+      ySel.onchange = apply;
+      mSel.onchange = apply;
+      document.getElementById('reset').onclick = () => { ySel.value=''; mSel.value=''; apply(); };
+    }
+  </script>
+</body>
+</html>

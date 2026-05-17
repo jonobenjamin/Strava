@@ -1,0 +1,17 @@
+# Build output (Vercel runs `npm run build` → public/)
+public/
+
+# Secrets — never commit
+.env
+.env.local
+.env.*.local
+
+# Vercel local link metadata
+.vercel/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Dependencies (if you add any later)
+node_modules/

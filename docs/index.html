@@ -1,0 +1,642 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Strava Dashboard with Country Filter</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body { 
+      height: 100%; 
+      margin: 0; 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      overflow: hidden; 
+    }
+    
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    
+    #map { 
+      flex: 1;
+      width: 100%; 
+      min-height: 300px;
+    }
+
+    .map-controls {
+      background: white;
+      padding: 12px;
+      border-top: 1px solid #e0e0e0;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+      max-height: 40vh;
+      overflow-y: auto;
+    }
+    
+    .controls-header {
+      margin: 0 0 12px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .legend-item { 
+      display: flex; 
+      align-items: center; 
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    
+    .legend-color { 
+      width: 16px; 
+      height: 16px; 
+      margin-right: 6px; 
+      border: 1px solid #ccc;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .controls-fields {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      gap: 8px;
+      align-items: end;
+      margin-bottom: 8px;
+    }
+    
+    .controls-fields label { 
+      font-size: 12px; 
+      font-weight: 500;
+      color: #555;
+    }
+    
+    .controls-fields select { 
+      width: 100%; 
+      margin-top: 4px;
+      padding: 6px 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .stats { 
+      font-size: 13px; 
+      margin: 8px 0;
+      color: #666;
+      font-weight: 500;
+    }
+
+    .metrics {
+      background: #f8f9fa;
+      padding: 8px;
+      border-radius: 4px;
+      margin-top: 8px;
+    }
+    
+    .metrics h3 { 
+      margin: 0 0 6px; 
+      font-size: 13px; 
+      color: #333;
+    }
+    
+    .metrics div {
+      font-size: 11px;
+      margin: 2px 0;
+      color: #666;
+    }
+    
+    .loading {
+      position: absolute; 
+      top: 50%; 
+      left: 50%; 
+      transform: translate(-50%, -50%);
+      background: white; 
+      padding: 20px; 
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15); 
+      z-index: 1001;
+      font-size: 14px;
+    }
+    
+    .error {
+      background: #fee; 
+      border: 1px solid #fcc; 
+      color: #c00;
+      padding: 8px; 
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    
+    button { 
+      padding: 6px 12px;
+      background: #007cba;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background-color 0.2s;
+      width: 100%;
+    }
+    
+    button:hover {
+      background: #005a87;
+    }
+
+    .glow-border {
+      stroke: #0ff !important;
+      stroke-width: 4 !important;
+      stroke-opacity: 1;
+      filter: drop-shadow(0 0 6px #0ff) drop-shadow(0 0 6px #0ff);
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      .legend {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+      }
+      
+      .legend-item {
+        font-size: 11px;
+      }
+      
+      .legend-color {
+        width: 14px;
+        height: 14px;
+      }
+      
+      .controls-fields {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+      }
+      
+      .map-controls {
+        max-height: 35vh;
+      }
+    }
+
+    /* When embedded as a tile */
+    .tile-mode {
+      height: 100%;
+    }
+    
+    .tile-mode .container {
+      height: 100%;
+    }
+    
+    .tile-mode .map-controls {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: min(240px, 35vw);
+      max-height: calc(100% - 24px);
+      border-radius: 4px;
+      z-index: 1000;
+      padding: 6px;
+      font-size: 10px;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+    
+    .tile-mode .controls-header {
+      font-size: 12px;
+      margin: 0 0 6px 0;
+      line-height: 1.2;
+    }
+    
+    .tile-mode .legend {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3px;
+      margin-bottom: 6px;
+    }
+    
+    .tile-mode .legend-item {
+      font-size: 9px;
+      line-height: 1.1;
+    }
+    
+    .tile-mode .legend-color {
+      width: 10px;
+      height: 10px;
+      margin-right: 3px;
+    }
+    
+    .tile-mode .controls-fields {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 3px;
+    }
+    
+    .tile-mode .controls-fields label {
+      font-size: 9px;
+      margin-bottom: 1px;
+    }
+    
+    .tile-mode .controls-fields select {
+      padding: 2px 4px;
+      font-size: 9px;
+      margin-top: 1px;
+    }
+    
+    .tile-mode button {
+      padding: 3px 6px;
+      font-size: 9px;
+      margin-top: 3px;
+      grid-column: 1 / -1;
+    }
+    
+    .tile-mode .stats {
+      font-size: 9px;
+      margin: 4px 0;
+      line-height: 1.1;
+    }
+    
+    .tile-mode .metrics {
+      padding: 4px;
+      margin-top: 4px;
+    }
+    
+    .tile-mode .metrics h3 {
+      font-size: 10px;
+      margin-bottom: 3px;
+    }
+    
+    .tile-mode .metrics div {
+      font-size: 8px;
+      margin: 1px 0;
+    }
+    
+    @media (max-width: 600px) {
+      .tile-mode .map-controls {
+        position: relative;
+        top: auto;
+        right: auto;
+        width: 100%;
+        border-radius: 0;
+        border-top: 1px solid #e0e0e0;
+        max-height: 30vh;
+        padding: 8px;
+      }
+      
+      .tile-mode .controls-header {
+        font-size: 13px;
+      }
+      
+      .tile-mode .legend-item,
+      .tile-mode .controls-fields label,
+      .tile-mode .stats {
+        font-size: 10px;
+      }
+      
+      .tile-mode .controls-fields {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body class="dashboard">
+  <div class="container">
+    <div id="loading" class="loading">Loading map data...</div>
+    <div id="map"></div>
+
+    <div class="map-controls">
+      <h3 class="controls-header">Strava Activities</h3>
+      
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-color" style="background:green;"></div>
+          Run
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background:red;"></div>
+          Ride/Bike
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background:blue;"></div>
+          Other
+        </div>
+      </div>
+
+      <div class="stats" id="stats">Loading…</div>
+
+      <div class="controls-fields">
+        <label>Year
+          <select id="year"></select>
+        </label>
+        <label>Month
+          <select id="month"></select>
+        </label>
+        <label>Country
+          <select id="country"><option value="">All</option></select>
+        </label>
+        <button id="reset">Reset</button>
+      </div>
+
+      <div class="metrics" id="metrics" style="display:none;">
+        <h3>CTL (42d avg TSS)</h3>
+        <div id="ctl-all">All: --</div>
+        <div id="ctl-run">Running: --</div>
+        <div id="ctl-ride">Cycling: --</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+  <script>
+    // Detect if running in tile mode
+    function detectTileMode() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isTile = urlParams.get('tile') === 'true';
+      const isSmallContainer = window.innerWidth < 800 || window.innerHeight < 600;
+      return isTile || isSmallContainer;
+    }
+
+    // Apply tile mode if detected
+    if (detectTileMode()) {
+      document.body.classList.add('tile-mode');
+      document.body.classList.remove('dashboard');
+    }
+
+    const africaBounds = [[-35.0, -20.0], [38.0, 52.0]];
+    const map = L.map('map').setView([6.0, 25.0], 4);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    let features = [];
+    const layerGroup = L.layerGroup().addTo(map);
+    let countryLayers = {};
+    let tempFlashLayer = null;
+
+    function hideLoading() { 
+      document.getElementById('loading').style.display = 'none'; 
+    }
+    
+    function showError(msg) {
+      const el = document.getElementById('stats');
+      el.innerHTML = `<div class="error">${msg}</div>`;
+      hideLoading();
+    }
+
+    // Normalize & alias functions
+    function normalizeCountryName(name) { 
+      return name.toLowerCase()
+        .replace(/^the\s+/i, '')
+        .replace(/[^\w\s]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim(); 
+    }
+
+    function createCountryAliases() { 
+      return {
+        'usa': ['united states of america', 'united states', 'america'], 
+        'uk': ['united kingdom', 'great britain', 'britain'], 
+        'england': ['united kingdom', 'great britain'],
+        'russia': ['russian federation'],
+        'south korea': ['korea'],
+        'north korea': ['korea'],
+        'czech republic': ['czechia'],
+        'myanmar': ['burma'],
+        'iran': ['islamic republic of iran'],
+        'syria': ['syrian arab republic'],
+        'laos': ['lao'],
+        'macedonia': ['north macedonia'],
+        'congo': ['democratic republic of the congo', 'republic of the congo'],
+        'ivory coast': ['cote divoire'],
+        'bosnia': ['bosnia and herzegovina']
+      }; 
+    }
+
+    // Draw activities
+    function draw(list) {
+      layerGroup.clearLayers();
+      if (list.length === 0) {
+        document.getElementById('stats').textContent = 'No activities to show';
+        return;
+      }
+      
+      const gj = L.geoJSON(list, {
+        style: f => {
+          const s = (f.properties.type || '').toLowerCase();
+          if (s.includes('run')) return { weight: 3, color: 'green', opacity: 0.8 };
+          if (s.includes('ride') || s.includes('cycle') || s.includes('bike')) return { weight: 3, color: 'red', opacity: 0.8 };
+          return { weight: 3, color: 'blue', opacity: 0.8 };
+        },
+        onEachFeature: (f, l) => {
+          const p = f.properties || {};
+          const title = [p.name, p.date].filter(Boolean).join(' — ');
+          const distance = p.distance ? `<br>${(p.distance / 1000).toFixed(1)} km` : '';
+          const country = p.country ? `<br>📍 ${p.country}` : '';
+          l.bindPopup(`<b>${title}</b><br><em>${p.type}</em>${distance}${country}`);
+        }
+      }).addTo(layerGroup);
+      
+      const bounds = gj.getBounds();
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { maxZoom: 12, padding: [20, 20] });
+      }
+      
+      document.getElementById('stats').textContent = `${list.length} activities shown`;
+    }
+
+    // Filters
+    function initFilters(list) {
+      const years = Array.from(new Set(list.map(f => f.properties?.year).filter(Boolean))).sort();
+      const months = [...Array(12).keys()].map(i => i + 1);
+      const ySel = document.getElementById('year');
+      const mSel = document.getElementById('month');
+      const cSel = document.getElementById('country');
+
+      ySel.innerHTML = '<option value="">All</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+      mSel.innerHTML = '<option value="">All</option>' + months.map(m => `<option value="${m}">${new Date(2024, m-1).toLocaleString('default', { month: 'short' })}</option>`).join('');
+
+      function apply() {
+        const y = ySel.value; 
+        const m = mSel.value; 
+        const c = cSel.value;
+        const filtered = features.filter(f => {
+          const p = f.properties || {};
+          if (y && String(p.year) !== y) return false;
+          if (m && String(p.month) !== m) return false;
+          if (c && p.country !== c) return false;
+          return true;
+        });
+        draw(filtered);
+      }
+
+      ySel.onchange = apply;
+      mSel.onchange = apply;
+      cSel.onchange = apply;
+      document.getElementById('reset').onclick = () => {
+        ySel.value = ''; 
+        mSel.value = ''; 
+        cSel.value = ''; 
+        apply();
+      };
+    }
+
+    // Create sample data for demo
+    function createSampleData() {
+      const activities = {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: { name: "Morning Run", type: "run", year: 2024, month: 8, date: "2024-08-15", distance: 5000 },
+            geometry: { type: "LineString", coordinates: [[25.9, -24.6], [26.0, -24.7], [26.1, -24.6]] }
+          },
+          {
+            type: "Feature", 
+            properties: { name: "City Bike Ride", type: "ride", year: 2024, month: 8, date: "2024-08-16", distance: 15000 },
+            geometry: { type: "LineString", coordinates: [[25.8, -24.5], [25.9, -24.6], [26.0, -24.5]] }
+          },
+          {
+            type: "Feature",
+            properties: { name: "Trail Run", type: "run", year: 2024, month: 7, date: "2024-07-20", distance: 8000 },
+            geometry: { type: "LineString", coordinates: [[25.0, -24.0], [25.1, -24.1], [25.2, -24.0]] }
+          },
+          {
+            type: "Feature",
+            properties: { name: "Long Cycle", type: "ride", year: 2024, month: 7, date: "2024-07-18", distance: 25000 },
+            geometry: { type: "LineString", coordinates: [[24.8, -23.9], [25.2, -24.2], [25.5, -24.1]] }
+          }
+        ]
+      };
+      
+      const countries = {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: { NAME: "Botswana" },
+            geometry: {
+              type: "Polygon",
+              coordinates: [[[24.0, -22.0], [28.0, -22.0], [28.0, -26.0], [24.0, -26.0], [24.0, -22.0]]]
+            }
+          }
+        ]
+      };
+      
+      return Promise.resolve([countries, activities]);
+    }
+
+    // Load countries and activities
+    async function loadCountriesAndActivities() {
+      try {
+        const [countriesGeo, activitiesGeo] = await Promise.all([
+          fetch("data/countries.geojson").then(r => {
+            if (!r.ok) throw new Error('Countries file not found');
+            return r.json();
+          }).catch(() => null),
+          fetch("data/activities.geojson?_=" + Date.now()).then(r => {
+            if (!r.ok) throw new Error('Activities file not found');
+            return r.json();
+          }).catch(() => null)
+        ]);
+
+        // Use sample data if files don't exist
+        const [countries, activities] = (!countriesGeo || !activitiesGeo) ? 
+          await createSampleData() : [countriesGeo, activitiesGeo];
+
+        // Filter out virtual activities
+        features = (activities.features || []).filter(f => {
+          const type = (f.properties?.type || "").toLowerCase();
+          const name = (f.properties?.name || "").toLowerCase();
+          return !type.includes("virtual") && !name.includes("virtual");
+        });
+
+        // Prepare country layers and list for filter
+        const visitedCountries = [];
+        const aliases = createCountryAliases();
+
+        countries.features.forEach((country, i) => {
+          const name = country.properties.NAME || country.properties.name || `Country_${i}`;
+          countryLayers[name] = { layer: null, polygon: country, visited: false };
+        });
+
+        // Assign countries via spatial join (simplified for demo)
+        features.forEach(f => {
+          // Simple assignment for demo - you can enhance this with proper spatial join
+          f.properties.country = "Botswana"; // Default for sample data
+          if (countryLayers["Botswana"]) {
+            countryLayers["Botswana"].visited = true;
+          }
+        });
+
+        // Prepare country dropdown (only visited)
+        const countrySel = document.getElementById('country');
+        Object.keys(countryLayers).forEach(name => {
+          if (countryLayers[name].visited) {
+            const opt = document.createElement('option');
+            opt.value = name; 
+            opt.text = name;
+            countrySel.add(opt);
+            visitedCountries.push({ name, polygon: countryLayers[name].polygon });
+          }
+        });
+
+        // Draw activities initially
+        draw(features);
+        initFilters(features);
+        document.getElementById('stats').textContent = `${features.length} activities loaded`;
+        hideLoading();
+
+        // Flash country on selection
+        countrySel.onchange = () => {
+          const sel = countrySel.value;
+          if (tempFlashLayer) { 
+            map.removeLayer(tempFlashLayer); 
+            tempFlashLayer = null; 
+          }
+          if (!sel) return;
+          
+          const country = visitedCountries.find(c => c.name === sel);
+          if (country) {
+            const bounds = L.geoJSON(country.polygon).getBounds();
+            map.fitBounds(bounds, { padding: [20, 20] });
+            tempFlashLayer = L.geoJSON(country.polygon, {
+              style: { color: '#0ff', weight: 4, fill: false, className: 'glow-border' }
+            }).addTo(map);
+            
+            let flashCount = 0;
+            const interval = setInterval(() => {
+              tempFlashLayer.setStyle({ opacity: flashCount % 2 === 0 ? 1 : 0 });
+              flashCount++;
+              if (flashCount > 3) { 
+                clearInterval(interval); 
+                map.removeLayer(tempFlashLayer); 
+                tempFlashLayer = null; 
+              }
+            }, 400);
+          }
+        };
+
+      } catch (err) {
+        console.error(err);
+        showError('Failed to load activity data.');
+      }
+    }
+
+    // Initialize
+    map.fitBounds(africaBounds);
+    loadCountriesAndActivities();
+
+    // Handle window resize for responsive behavior
+    window.addEventListener('resize', function() {
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 100);
+    });
+  </script>
+</body>
+</html>
