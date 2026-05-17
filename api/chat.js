@@ -109,3 +109,4 @@ module.exports = async function handler(req, res) {
     return bad(res, 502, e.message || 'Upstream fetch failed');
   }
 };
+
