@@ -1,5 +1,5 @@
-/**
- * Copy to config.js for optional UI-only settings (no secrets).
- * Example: window.APP_CONFIG = { defaultActivityFilter: 'run' };
- */
-window.APP_CONFIG = {};
+window.APP_CONFIG = {
+  API_BASE: 'https://YOUR-VERCEL-PROJECT.vercel.app/api',
+  PUBLIC_API_TOKEN: '',
+  VERCEL_PROTECTION_BYPASS: ''
+};

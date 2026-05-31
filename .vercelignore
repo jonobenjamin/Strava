@@ -1,0 +1,8 @@
+# Keep Python / static site out of Vercel when Root Directory is repo root
+requirements.txt
+scripts/
+docs/
+public/
+maps/
+*.py
+**/__pycache__/

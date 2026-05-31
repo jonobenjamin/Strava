@@ -1,8 +1,0 @@
-{
-  "name": "strava-dashboard",
-  "private": true,
-  "scripts": {
-    "build": "rm -rf public && mkdir -p public && cp -R docs/. public/",
-    "vercel-build": "npm run build"
-  }
-}

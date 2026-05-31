@@ -1,17 +1,20 @@
-# Build output (Vercel runs `npm run build` → public/)
-public/
+# Legacy Vercel static build at repo root (not backend/public/ which IS committed)
+/public/
 
 # Secrets — never commit
 .env
 .env.local
 .env.*.local
+backend/.env
 
 # Vercel local link metadata
 .vercel/
+backend/.vercel/
 
 # OS / editor
 .DS_Store
 Thumbs.db
 
-# Dependencies (if you add any later)
+# Dependencies
 node_modules/
+backend/node_modules/

@@ -1,0 +1,9 @@
+{
+  "name": "strava-intervals-api",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Vercel serverless API only — no frontend, no Python",
+  "engines": {
+    "node": "20.x"
+  }
+}
