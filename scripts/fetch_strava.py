@@ -40,6 +40,24 @@ def refresh_access_token():
     tokens = r.json()
     return tokens["access_token"], tokens["refresh_token"], tokens["expires_at"]
 
+def strava_api_error(prefix: str, r: requests.Response) -> str:
+    """Human-readable message for common Strava API failures."""
+    body = r.text or ""
+    if r.status_code == 403 and "Inactive" in body:
+        return (
+            f"{prefix}: Strava API application is INACTIVE.\n"
+            "Fix: open https://www.strava.com/settings/api — check your app is active.\n"
+            "If needed, create a new app, re-authorize to get a fresh refresh token,\n"
+            "then update GitHub secrets (STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, STRAVA_REFRESH_TOKEN)."
+        )
+    if r.status_code == 401:
+        return (
+            f"{prefix}: Unauthorized (401). Refresh token may be expired or revoked.\n"
+            "Re-authorize the app and update STRAVA_REFRESH_TOKEN in GitHub secrets."
+        )
+    return f"{prefix}: {r.status_code} {body}"
+
+
 def strava_get_activities(access_token: str, page: int = 1, per_page: int = 200, after: int | None = None):
     url = f"https://www.strava.com/api/v3/athlete/activities?page={page}&per_page={per_page}"
     if after is not None:
@@ -59,9 +77,9 @@ def strava_get_activities(access_token: str, page: int = 1, per_page: int = 200,
                 time.sleep(delay)
                 continue
             else:
-                raise RuntimeError(f"Fetch activities failed after {max_retries} retries: {r.status_code} {r.text}")
+                raise RuntimeError(strava_api_error("Fetch activities failed after retries", r))
         else:
-            raise RuntimeError(f"Fetch activities failed: {r.status_code} {r.text}")
+            raise RuntimeError(strava_api_error("Fetch activities failed", r))
 
     # This should never be reached, but just in case
     raise RuntimeError(f"Fetch activities failed after {max_retries} retries")

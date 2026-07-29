@@ -41,13 +41,28 @@ def refresh_access_token():
     return tokens["access_token"], tokens["refresh_token"], tokens["expires_at"]
 
 
+def strava_api_error(prefix: str, r: requests.Response) -> str:
+    body = r.text or ""
+    if r.status_code == 403 and "Inactive" in body:
+        return (
+            f"{prefix}: Strava API application is INACTIVE.\n"
+            "Fix: open https://www.strava.com/settings/api — check your app is active.\n"
+            "Re-authorize and update GitHub secrets (TRAVEL_CLIENT_ID, TRAVEL_CLIENT_SECRET, TRAVEL_REFRESH_TOKEN)."
+        )
+    if r.status_code == 401:
+        return (
+            f"{prefix}: Unauthorized (401). Re-authorize and update TRAVEL_REFRESH_TOKEN in GitHub secrets."
+        )
+    return f"{prefix}: {r.status_code} {body}"
+
+
 def strava_get_activities(access_token: str, page: int = 1, per_page: int = 200, after: int | None = None):
     url = f"https://www.strava.com/api/v3/athlete/activities?page={page}&per_page={per_page}"
     if after is not None:
         url += f"&after={after}"
     r = requests.get(url, headers={"Authorization": f"Bearer {access_token}"}, timeout=60)
     if r.status_code != 200:
-        raise RuntimeError(f"Fetch activities failed: {r.status_code} {r.text}")
+        raise RuntimeError(strava_api_error("Fetch activities failed", r))
     return r.json()
 
 
